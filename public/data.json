@@ -1,0 +1,66 @@
+[
+    {
+        "id":1,
+        "name":"Kurt Glasses",
+        "price": 150,
+        "img": "en proceso",
+        "gender": "hombre",
+        "quantity":1
+    },
+    {
+        "id":2,
+        "name":"clasicos 1",
+        "price": 120,
+        "img": "en proceso",
+        "gender": "hombre",
+        "quantity":1
+    },
+    {
+        "id":3,
+        "name":"clasicos 2",
+        "price": 180,
+        "img": "en proceso",
+        "gender": "mujer",
+        "quantity":1
+    },
+    {
+        "id":4,
+        "name":"Urbano 1",
+        "price": 95,
+        "img": "en proceso",
+        "gender": "hombre",
+        "quantity":1
+    },
+    {
+        "id":5,
+        "name":"Urbano 2",
+        "price": 220,
+        "img": "en proceso",
+        "gender": "mujer",
+        "quantity":1
+    },
+    {
+        "id":6,
+        "name":"Deportivo 1",
+        "price": 85,
+        "img": "en proceso",
+        "gender": "hombre",
+        "quantity":1
+    },
+    {
+        "id":7,
+        "name":"Deportivo 2",
+        "price": 200,
+        "img": "en proceso",
+        "gender": "mujer",
+        "quantity":1
+    },
+    {
+        "id":8,
+        "name":"Minimalist Clear",
+        "price": 110,
+        "img": "en proceso",
+        "gender": "unisex",
+        "quantity":1
+    }
+]
