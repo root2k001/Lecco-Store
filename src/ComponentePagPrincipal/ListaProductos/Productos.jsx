@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
-
-
+import { useState, useEffect, useMemo, useContext } from 'react';
+import { useCarrito } from '../../context/CarritoContext'
 import './Productos.css'
 
-const ProductosList = () => {
+
+const ProductosList = ({ onImageClick }) => {
     const [productos, setProductos] = useState([])
     const [filtros, setFiltros] = useState({
         hombre: false,
@@ -11,6 +11,8 @@ const ProductosList = () => {
         unisex: false
     })
     const [orden, setOrden] = useState('relevante')
+    const { agregarAlCarrito } = useCarrito()
+    
 
 
     // actualiza los datos (productos) al cargar  el componente 
@@ -39,6 +41,11 @@ const ProductosList = () => {
         setOrden(e.target.value)
     }   //camputa el valor del menu desplegable  "select" actualizando el valor en la variable orden
 
+    const handleImageClick =(producto)=>{
+        if (onImageClick) {
+            onImageClick(producto)
+        }
+    }
 
 
 
@@ -154,17 +161,22 @@ const ProductosList = () => {
                         <p className="no-resultados">No se encontraron productos</p>
                     ) : (
                         productosFiltrados.map((producto) => (
-                            <div className='producto-carta' key={producto.id} >
+                            <div className='producto-carta'  key={producto.id}
+                                
+                            >
                                 <div className='producto-imagen'>
                                     {producto.img && producto.img !== 'en proceso' ?   
-                                        <img src={producto.img} alt={producto.name} /> : 
-                                        <div className='imagen-placeholder'>👓</div>
+                                        <img src={producto.img} alt={producto.name} onClick={() => handleImageClick(producto)} /> : 
+                                        <div className='imagen-placeholder'
+                                        onClick={()=>handleImageClick(producto)}
+                                        
+                                        >👓</div>
                                     }
                                 </div>
                                 <span className='genero-tag'>{producto.gender}</span>
                                 <h3>{producto.name}</h3>
-                                <p className='precio'>{producto.price}</p>
-                                <button className='btn-carrito'>Añadir al Carrito</button>
+                                <p className='precio'>${producto.price}</p>
+                                <button className='btn-carrito' onClick={() => agregarAlCarrito(producto)}>Añadir al Carrito</button>
                             </div>
                         ))
                     )}
