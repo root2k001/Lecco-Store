@@ -40,10 +40,10 @@ export function CarritoProvider({ children }) {
     }
     
 
-    const valorCarrito = { carrito, agregarAlCarrito, eliminarDelCarrito }
+    const valorCarrito = { carrito, agregarAlCarrito, eliminarDelCarrito } // ALMACENA EL ARREGLO CARRITO Y SUS FUNCIONES 
 
     return (
-        <CarritoContext.Provider value={valorCarrito}>
+        <CarritoContext.Provider value={valorCarrito}> 
             {children}
         </CarritoContext.Provider>
     )
