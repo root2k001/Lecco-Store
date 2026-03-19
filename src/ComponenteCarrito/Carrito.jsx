@@ -5,7 +5,7 @@ import Cabecera from '../ComponentePagPrincipal/cabecera/cabecera'
 
 function Carrito() {
     const { carrito, eliminarDelCarrito } = useCarrito()
-    const total = carrito.reduce((acc, item) => acc + (item.price * item.quantity), 0)
+    const total = carrito.reduce((acc, item) => acc + (item.price * item.quantity), 0)  // SUMA DE PRODUCTOS DEL CARRITO DE COMPRA 
     const subtotal = total
 
     return (

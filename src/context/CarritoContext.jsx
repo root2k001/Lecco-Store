@@ -15,7 +15,8 @@ export function CarritoProvider({ children }) {
 
     const agregarAlCarrito = (producto) => {   //  es una fiuncion  toma la variable producto agregado 
         setCarrito(prev => {  // funcion que setea el carrio y aumente la cantidad cuando un producto se repita 
-            const existenteProducto = prev.find(p => p.id === producto.id)  /**evalua  haciando la comparacion de un parametroy si sin */       
+            const existenteProducto = prev.find(p => p.id === producto.id)  /**evalua  haciando la busqueda  de un parametro 
+                                                                               y retorna el valor booleano  */       
             
             if (existenteProducto) {    /*
                                     si encuentra una coincidencia entonces mapea el carrito donde coincide el cproducto     
