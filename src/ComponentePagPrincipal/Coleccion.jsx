@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import Cabecera from './cabecera/cabecera.jsx';
+import Cabecera from '../ComponentesGenerales/cabecera/cabecera.jsx';
 import Productos from './ListaProductos/Productos'
 import DetalleProducto from './DetallesProductos/DetallesProductos'
 

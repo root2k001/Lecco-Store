@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Carrito from "./Carrito.jsx"; {}
-import Cabecera from "../ComponentePagPrincipal/cabecera/cabecera.jsx";
+import Cabecera from "../ComponentesGenerales/cabecera/cabecera.jsx";
 function CarritoMain(){
 
 

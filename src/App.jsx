@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
-import './ComponentePagPrincipal/cabecera/principal.css'
+import './ComponentesGenerales/cabecera/principal.css'
 
 import Inicio from './ComponentesPagInicio/Inicio'
 import Coleccion from './ComponentePagPrincipal/Coleccion'

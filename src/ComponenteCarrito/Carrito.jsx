@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import './Carrito.css'
 import { useCarrito } from '../context/CarritoContext'
-import Cabecera from '../ComponentePagPrincipal/cabecera/cabecera'
+import Cabecera from '../ComponentesGenerales/cabecera/cabecera'
 
 function Carrito() {
     const { carrito, eliminarDelCarrito } = useCarrito()
