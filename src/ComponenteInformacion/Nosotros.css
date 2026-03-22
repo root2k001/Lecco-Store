@@ -1,0 +1,163 @@
+.nosotros-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.nosotros-hero {
+  background-color: #f5f5f5;
+  padding: 80px 20px;
+  text-align: center;
+}
+
+.nosotros-hero h1 {
+  font-size: 3rem;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 6px;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.nosotros-hero p {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.nosotros-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 60px 20px;
+  flex: 1;
+}
+
+.nosotros-seccion {
+  margin-bottom: 50px;
+}
+
+.nosotros-seccion h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #1a1a1a;
+  margin-bottom: 20px;
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.nosotros-seccion h2::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background-color: #c9a962;
+}
+
+.nosotros-seccion p {
+  font-size: 1.05rem;
+  line-height: 1.8;
+  color: #555;
+}
+
+.nosotros-valores {
+  margin-bottom: 50px;
+}
+
+.nosotros-valores h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #1a1a1a;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.valores-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .valores-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .valores-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.valor-card {
+  background-color: #fff;
+  padding: 30px 20px;
+  text-align: center;
+  border: 1px solid #eee;
+  transition: all 0.3s;
+}
+
+.valor-card:hover {
+  border-color: #c9a962;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.valor-icono {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.valor-card h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.valor-card p {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.5;
+}
+
+.nosotros-preguntas {
+  margin-bottom: 60px;
+}
+
+.nosotros-preguntas h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  color: #1a1a1a;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.pregunta-item {
+  background-color: #fff;
+  padding: 24px;
+  margin-bottom: 16px;
+  border-left: 3px solid #c9a962;
+}
+
+.pregunta-item h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.pregunta-item p {
+  font-size: 0.95rem;
+  color: #666;
+  line-height: 1.6;
+}

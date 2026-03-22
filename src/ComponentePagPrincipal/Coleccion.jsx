@@ -1,30 +1,18 @@
 import { useState } from 'react'
 
 import Cabecera from '../ComponentesGenerales/cabecera/cabecera.jsx';
-import Productos from './ListaProductos/Productos'
-import DetalleProducto from './DetallesProductos/DetallesProductos'
+import Productos from './ListaProductos/Productos';
+import PiePagina from '../ComponentesGenerales/footer/Footer.jsx';
 
 function Principal(){
-    const [productoSeleccionado, setProductoSeleccionado] = useState(null)
 
-    const handleImageClick = (producto) => {
-        setProductoSeleccionado(producto)
-    }
-
-    const handleCerrarModal = () => {
-        setProductoSeleccionado(null)
-    }
 
     return(
         <div className="Principal-container">
             <Cabecera />
-            <Productos onImageClick={handleImageClick} />
-            {productoSeleccionado && (
-                <DetalleProducto 
-                    producto={productoSeleccionado} 
-                    onCerrar={handleCerrarModal} 
-                />
-            )}
+            <Productos  />
+          <PiePagina />
+          
         </div>
     )
 }

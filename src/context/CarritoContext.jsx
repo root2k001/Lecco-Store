@@ -1,29 +1,25 @@
-import { useState, useContext, createContext } from 'react'
+import { useState, useContext, createContext, useEffect } from 'react'
 
-export const CarritoContext = createContext()  //  crea el objeto del contexto 
+export const CarritoContext = createContext()
 
-export const useCarrito = () => useContext(CarritoContext)  /**  es un custom hook , en lugar de importa use context y crateContext , 
-                                                                 llamas directamente a useCarrito();
-                                                        
-
-                                                                */
-                                                        
-        //funcion que gestiona el estado real del carrito 
+export const useCarrito = () => useContext(CarritoContext)
 
 export function CarritoProvider({ children }) {
-    const [carrito, setCarrito] = useState([])   //memoria de mis componentes , renderiza el estado del carrito 
+    const [carrito, setCarrito] = useState(() => {
+        const guardando = localStorage.getItem('carrito-lecco')
+        return guardando ? JSON.parse(guardando) : []
+    })
 
-    const agregarAlCarrito = (producto) => {   //  es una fiuncion  toma la variable producto agregado 
-        setCarrito(prev => {  // funcion que setea el carrio y aumente la cantidad cuando un producto se repita 
-            const existenteProducto = prev.find(p => p.id === producto.id)  /**evalua  haciando la busqueda  de un parametro 
-                                                                               y retorna el valor booleano  */       
+    useEffect(() => {
+        localStorage.setItem('carrito-lecco', JSON.stringify(carrito))
+    }, [carrito])
+
+    const agregarAlCarrito = (producto) => {
+        setCarrito(prev => {
+            const existenteProducto = prev.find(p => p.id === producto.id)
             
-            if (existenteProducto) {    /*
-                                    si encuentra una coincidencia entonces mapea el carrito donde coincide el cproducto     
-                                     y evalua que si se parecen los producto entonces al arreglo producto le suma uno en cantidad 
-
-                                    */
-            return prev.map(p => 
+            if (existenteProducto) {
+                return prev.map(p => 
                     p.id === producto.id ? { ...p, quantity: p.quantity + 1 } : p
                 )
             }
@@ -32,16 +28,42 @@ export function CarritoProvider({ children }) {
     }
 
     const eliminarDelCarrito = (id) => {
-        setCarrito(prev => prev.filter(p => p.id !== id))  /** utilizando la funcion setCarrito(),
-                                                                con una funcion flecha define que el carrito es igual 
-                                                                al filtrado sw loa peductos, manos del que coincida con el 
-                                                                id del parametro  
-        
-                                                                */
+        setCarrito(prev => prev.filter(p => p.id !== id))
     }
-    
 
-    const valorCarrito = { carrito, agregarAlCarrito, eliminarDelCarrito } // ALMACENA EL ARREGLO CARRITO Y SUS FUNCIONES 
+    const incrementarCantidad = (id) => {
+        setCarrito(prev => 
+            prev.map(p => 
+                p.id === id ? { ...p, quantity: p.quantity + 1 } : p
+            )
+        )
+    }
+
+    const decrementarCantidad = (id) => {
+        setCarrito(prev => 
+            prev.map(p => {
+                if (p.id === id) {
+                    if (p.quantity > 1) {
+                        return { ...p, quantity: p.quantity - 1 }
+                    }
+                }
+                return p
+            }).filter(p => p.quantity > 0)
+        )
+    }
+
+    const vaciarCarrito = () => {
+        setCarrito([])
+    }
+
+    const valorCarrito = { 
+        carrito, 
+        agregarAlCarrito, 
+        eliminarDelCarrito,
+        incrementarCantidad,
+        decrementarCantidad,
+        vaciarCarrito
+    }
 
     return (
         <CarritoContext.Provider value={valorCarrito}> 

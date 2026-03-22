@@ -203,3 +203,86 @@
 .btn-seguir-comprando:hover {
   color: #c9a962;
 }
+
+.carrito-vacio-icono {
+  font-size: 4rem;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.carrito-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.carrito-header span {
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.btn-vaciar {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: opacity 0.3s;
+}
+
+.btn-vaciar:hover {
+  opacity: 0.7;
+}
+
+.carrito-item-cantidad-control {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.btn-cantidad {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background-color: #f5f5f5;
+  color: #1a1a1a;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-cantidad:hover:not(:disabled) {
+  background-color: #e0e0e0;
+}
+
+.btn-cantidad:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.cantidad-numero {
+  width: 40px;
+  text-align: center;
+  font-weight: 500;
+  font-size: 1rem;
+}
+
+.carrito-item-precio-unitario {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.envio-gratis {
+  color: #27ae60;
+  font-weight: 500;
+}
