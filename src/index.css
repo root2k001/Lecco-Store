@@ -1,7 +1,6 @@
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
-  
 }
 
 * {
@@ -19,4 +18,16 @@
 body {
   min-height: 100vh;
   width: 100%;
+  background-color: #fafafa;
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Encabezados globales con estilo Serif Editorial */
+h1, h2, h3 {
+  font-family: 'Cinzel', serif;
+  font-weight: 400;
+  letter-spacing: 2px;
+  color: #111;
 }
