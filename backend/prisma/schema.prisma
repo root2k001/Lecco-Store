@@ -62,3 +62,12 @@ model HistorialCambios {
   detalle  String
   creadoEn DateTime @default(now())
 }
+
+model MensajeContacto {
+  id       Int      @id @default(autoincrement())
+  nombre   String
+  email    String
+  telefono String?
+  mensaje  String
+  creadoEn DateTime @default(now())
+}

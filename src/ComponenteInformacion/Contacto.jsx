@@ -11,6 +11,8 @@ function Contacto() {
     })
     const [enviado, setEnviado] = useState(false)
     const [errores, setErrores] = useState({})
+    const [enviando, setEnviando] = useState(false)
+    const [errorGeneral, setErrorGeneral] = useState('')
 
     const handleChange = (e) => {
         const { name, value } = e.target
@@ -42,19 +44,41 @@ function Contacto() {
         return Object.keys(nuevosErrores).length === 0
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
+        setErrorGeneral('')
         
         if (validarFormulario()) {
-            console.log('Datos enviados:', formData)
-            setEnviado(true)
+            setEnviando(true)
+            try {
+                const res = await fetch('/api/contacto', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                })
+
+                const data = await res.json()
+
+                if (res.ok) {
+                    setEnviado(true)
+                } else {
+                    setErrorGeneral(data.error || 'Hubo un error al enviar el mensaje. Inténtalo de nuevo.')
+                }
+            } catch (err) {
+                console.error('Error de red en contacto:', err)
+                setErrorGeneral('Error al conectar con el servidor. Verifica tu conexión.')
+            } finally {
+                setEnviando(false)
+            }
         }
     }
 
     const handleReset = () => {
         setFormData({ nombre: '', email: '', telefono: '', mensaje: '' })
         setErrores({})
+        setErrorGeneral('')
         setEnviado(false)
+        setEnviando(false)
     }
 
     if (enviado) {
@@ -103,6 +127,20 @@ function Contacto() {
                 </div>
 
                 <form className="contacto-formulario" onSubmit={handleSubmit}>
+                    {errorGeneral && (
+                        <div className="error-general" style={{
+                            backgroundColor: '#fef2f2',
+                            color: '#ef4444',
+                            border: '1px solid #fca5a5',
+                            padding: '12px',
+                            borderRadius: '4px',
+                            marginBottom: '20px',
+                            fontSize: '14px',
+                            fontWeight: '500'
+                        }}>
+                            ⚠️ {errorGeneral}
+                        </div>
+                    )}
                     <div className="form-grupo">
                         <label htmlFor="nombre">Nombre</label>
                         <input
@@ -157,8 +195,8 @@ function Contacto() {
                         {errores.mensaje && <span className="error-mensaje">{errores.mensaje}</span>}
                     </div>
 
-                    <button type="submit" className="btn-enviar">
-                        Enviar Mensaje
+                    <button type="submit" className="btn-enviar" disabled={enviando}>
+                        {enviando ? 'Enviando...' : 'Enviar Mensaje'}
                     </button>
                 </form>
             </div>
