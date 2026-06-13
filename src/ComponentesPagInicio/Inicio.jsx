@@ -2,7 +2,7 @@ import './inicio.css'
 
 import Columna1  from './Columna1';
 import Columna2  from './Columna2';
-function inicio(){
+function Inicio(){
 
 return(
 
@@ -19,4 +19,4 @@ return(
 }
 
 
-export default inicio;
+export default Inicio;

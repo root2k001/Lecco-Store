@@ -10,6 +10,7 @@ function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('pedidos');
   const [pedidos, setPedidos] = useState([]);
   const [productos, setProductos] = useState([]);
+  const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
@@ -25,17 +26,24 @@ function AdminDashboard() {
     setCargando(true);
     try {
       // Cargar pedidos
-      const resPedidos = await fetch('http://localhost:3000/api/pedidos/admin/todos', {
+      const resPedidos = await fetch('/api/pedidos/admin/todos', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const dataPedidos = await resPedidos.json();
       
       // Cargar productos
-      const resProductos = await fetch('http://localhost:3000/api/productos');
+      const resProductos = await fetch('/api/productos');
       const dataProductos = await resProductos.json();
+
+      // Cargar historial de cambios
+      const resHistorial = await fetch('/api/historial', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const dataHistorial = await resHistorial.json();
 
       if (resPedidos.ok) setPedidos(dataPedidos);
       if (resProductos.ok) setProductos(dataProductos);
+      if (resHistorial.ok) setHistorial(dataHistorial);
     } catch (error) {
       console.error('Error cargando datos del panel:', error);
     } finally {
@@ -45,7 +53,7 @@ function AdminDashboard() {
 
   const actualizarEstadoPedido = async (id, nuevoEstado) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/pedidos/admin/estado/${id}`, {
+      const res = await fetch(`/api/pedidos/admin/estado/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -56,6 +64,7 @@ function AdminDashboard() {
 
       if (res.ok) {
         setPedidos(pedidos.map(p => p.id === id ? { ...p, estado: nuevoEstado } : p));
+        cargarDatos(); // Recargar para actualizar el historial
       } else {
         alert('Error al actualizar el estado');
       }
@@ -66,7 +75,7 @@ function AdminDashboard() {
 
   const actualizarStock = async (id, nuevoStock) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/productos/${id}`, {
+      const res = await fetch(`/api/productos/${id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -78,6 +87,7 @@ function AdminDashboard() {
       if (res.ok) {
         setProductos(productos.map(p => p.id === id ? { ...p, stock: parseInt(nuevoStock) } : p));
         alert('Stock actualizado');
+        cargarDatos(); // Recargar para actualizar el historial
       }
     } catch (error) {
       console.error(error);
@@ -102,6 +112,12 @@ function AdminDashboard() {
             onClick={() => setActiveTab('productos')}
           >
             👟 Inventario
+          </li>
+          <li 
+            className={activeTab === 'historial' ? 'active' : ''} 
+            onClick={() => setActiveTab('historial')}
+          >
+            📜 Historial de Cambios
           </li>
         </ul>
       </div>
@@ -193,6 +209,47 @@ function AdminDashboard() {
                     </td>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activeTab === 'historial' && (
+          <div className="admin-section">
+            <h3>Historial de Cambios Realizados</h3>
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Fecha y Hora</th>
+                  <th>Administrador</th>
+                  <th>Acción</th>
+                  <th>Detalles del Cambio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historial.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', color: '#64748b', padding: '30px' }}>
+                      No hay cambios registrados en el historial.
+                    </td>
+                  </tr>
+                ) : (
+                  historial.map(log => (
+                    <tr key={log.id}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{new Date(log.creadoEn).toLocaleString('es-CL')}</td>
+                      <td>
+                        <strong>{log.admin?.nombre || 'Admin'}</strong>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>{log.admin?.email || ''}</div>
+                      </td>
+                      <td>
+                        <span className={`accion-badge ${log.accion.toLowerCase().includes('stock') ? 'badge-stock' : 'badge-pedido'}`}>
+                          {log.accion}
+                        </span>
+                      </td>
+                      <td>{log.detalle}</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

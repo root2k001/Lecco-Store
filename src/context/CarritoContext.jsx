@@ -17,13 +17,22 @@ export function CarritoProvider({ children }) {
     const agregarAlCarrito = (producto) => {
         setCarrito(prev => {
             const existenteProducto = prev.find(p => p.id === producto.id)
+            const maxStock = producto.stock !== undefined ? producto.stock : (producto.quantity !== undefined ? producto.quantity : Infinity)
             
             if (existenteProducto) {
+                if (existenteProducto.quantity >= maxStock) {
+                    return prev
+                }
                 return prev.map(p => 
                     p.id === producto.id ? { ...p, quantity: p.quantity + 1 } : p
                 )
             }
-            return [...prev, { ...producto, quantity: 1 }]
+
+            if (maxStock <= 0) {
+                return prev
+            }
+
+            return [...prev, { ...producto, quantity: 1, stock: maxStock }]
         })
     }
 
@@ -33,9 +42,16 @@ export function CarritoProvider({ children }) {
 
     const incrementarCantidad = (id) => {
         setCarrito(prev => 
-            prev.map(p => 
-                p.id === id ? { ...p, quantity: p.quantity + 1 } : p
-            )
+            prev.map(p => {
+                if (p.id === id) {
+                    const maxStock = p.stock !== undefined ? p.stock : Infinity
+                    if (p.quantity >= maxStock) {
+                        return p
+                    }
+                    return { ...p, quantity: p.quantity + 1 }
+                }
+                return p
+            })
         )
     }
 

@@ -8,7 +8,7 @@ import { useState } from 'react'
 import AuthModal from '../AuthModal/AuthModal'
 
 function Cabecera() {
-    const { carrito, eliminarDelCarrito, agregarAlCarrito } = useCarrito()
+    const { carrito, eliminarDelCarrito, agregarAlCarrito, incrementarCantidad, decrementarCantidad } = useCarrito()
     const { usuario, logout } = useAuth()
     const { listaFavoritos, toggleFavorito } = useFavoritos()
     const cantidadTotal = carrito.reduce((acc, item) => acc + item.quantity, 0)
@@ -103,7 +103,9 @@ function Cabecera() {
                                                         <button 
                                                             className="btn-cantidad" 
                                                             onClick={() => incrementarCantidad(item.id)}
-                                                            title="Aumentar cantidad"
+                                                            title={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? "Límite de stock alcanzado" : "Aumentar cantidad"}
+                                                            disabled={item.quantity >= (item.stock !== undefined ? item.stock : Infinity)}
+                                                            style={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                                                         >
                                                             +
                                                         </button>

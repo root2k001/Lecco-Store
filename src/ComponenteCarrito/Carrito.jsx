@@ -7,7 +7,7 @@ import AuthModal from '../ComponentesGenerales/AuthModal/AuthModal'
 
 function Carrito() {
     const { carrito, eliminarDelCarrito, incrementarCantidad, decrementarCantidad, vaciarCarrito } = useCarrito()
-    const { usuario } = useAuth()
+    const { usuario, token } = useAuth()
     
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [compraExitosa, setCompraExitosa] = useState(false)
@@ -45,11 +45,13 @@ function Carrito() {
                 precio: item.price
             }))
 
-            const response = await fetch('http://localhost:3000/api/pedidos', {
+            const response = await fetch('/api/pedidos', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({
-                    usuarioId: usuario.id,
                     total: total,
                     items: items,
                     direccion: envioDatos.direccion,
@@ -139,6 +141,9 @@ function Carrito() {
                                         <button 
                                             className="btn-cantidad"
                                             onClick={() => incrementarCantidad(item.id)}
+                                            disabled={item.quantity >= (item.stock !== undefined ? item.stock : Infinity)}
+                                            title={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? "Límite de stock alcanzado" : "Aumentar cantidad"}
+                                            style={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                                         >
                                             +
                                         </button>

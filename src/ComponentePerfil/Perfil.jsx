@@ -27,7 +27,9 @@ function Perfil() {
 
   const cargarMisPedidos = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/pedidos/mis-pedidos/${usuario.id}`);
+      const res = await fetch('/api/pedidos/mis-pedidos', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
       const data = await res.json();
       if (res.ok) {
         setPedidos(data);

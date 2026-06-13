@@ -4,32 +4,62 @@ import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
-// Crear un nuevo pedido
-router.post('/', async (req, res) => {
-  const { usuarioId, items, total, direccion, ciudad, codigoPostal, telefono } = req.body;
+// Crear un nuevo pedido (Ruta protegida)
+router.post('/', verifyToken, async (req, res) => {
+  const usuarioId = req.usuario.id;
+  const { items, total, direccion, ciudad, codigoPostal, telefono } = req.body;
   // 'items' debe ser un arreglo que llegue del Frontend como: [{ productoId: 1, cantidad: 2, precio: 150 }]
 
   try {
-    const nuevoPedido = await prisma.pedido.create({
-      data: {
-        usuarioId,
-        total,
-        direccion,
-        ciudad,
-        codigoPostal,
-        telefono,
-        // Prisma es genial y nos permite crear el pedido y sus items al mismo tiempo:
-        items: {
-          create: items.map(item => ({
-            productoId: item.productoId,
-            cantidad: item.cantidad,
-            precioUnit: item.precio
-          }))
-        }
-      },
-      include: {
-        items: true // Para devolver los detalles en la respuesta
+    // 1. Verificar stock disponible para todos los productos antes de crear el pedido
+    for (const item of items) {
+      const producto = await prisma.producto.findUnique({
+        where: { id: item.productoId }
+      });
+      if (!producto) {
+        return res.status(404).json({ error: `Producto con ID #${item.productoId} no encontrado.` });
       }
+      if (producto.stock < item.cantidad) {
+        return res.status(400).json({ error: `Stock insuficiente para "${producto.nombre}". Stock disponible: ${producto.stock}.` });
+      }
+    }
+
+    // 2. Realizar la compra y descontar stock en una transacción
+    const nuevoPedido = await prisma.$transaction(async (tx) => {
+      const pedido = await tx.pedido.create({
+        data: {
+          usuarioId,
+          total,
+          direccion,
+          ciudad,
+          codigoPostal,
+          telefono,
+          items: {
+            create: items.map(item => ({
+              productoId: item.productoId,
+              cantidad: item.cantidad,
+              precioUnit: item.precio
+            }))
+          }
+        },
+        include: {
+          items: true
+        }
+      });
+
+      // Descontar stock para cada producto
+      for (const item of items) {
+        await tx.producto.update({
+          where: { id: item.productoId },
+          data: {
+            stock: {
+              decrement: item.cantidad
+            }
+          }
+        });
+      }
+
+      return pedido;
     });
 
     res.status(201).json({ message: 'Pedido procesado exitosamente', pedido: nuevoPedido });
@@ -39,9 +69,9 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Obtener el historial de pedidos de un usuario específico
-router.get('/mis-pedidos/:usuarioId', async (req, res) => {
-  const { usuarioId } = req.params;
+// Obtener el historial de pedidos del usuario autenticado
+router.get('/mis-pedidos', verifyToken, async (req, res) => {
+  const usuarioId = req.usuario.id;
 
   try {
     const pedidos = await prisma.pedido.findMany({
@@ -90,10 +120,29 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
   const { estado } = req.body;
 
   try {
+    const pedidoPrevio = await prisma.pedido.findUnique({
+      where: { id: parseInt(id) },
+      include: { usuario: { select: { nombre: true } } }
+    });
+
+    if (!pedidoPrevio) {
+      return res.status(404).json({ error: 'Pedido no encontrado' });
+    }
+
     const pedidoActualizado = await prisma.pedido.update({
       where: { id: parseInt(id) },
       data: { estado }
     });
+
+    // Registrar en el historial
+    await prisma.historialCambios.create({
+      data: {
+        adminId: req.usuario.id,
+        accion: 'Cambio de Estado de Pedido',
+        detalle: `Pedido #${id} del cliente "${pedidoPrevio.usuario?.nombre || 'Desconocido'}": estado modificado de "${pedidoPrevio.estado}" a "${estado}".`
+      }
+    });
+
     res.json(pedidoActualizado);
   } catch (error) {
     console.error('Error actualizando estado del pedido:', error);

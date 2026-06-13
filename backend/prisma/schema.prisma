@@ -8,13 +8,14 @@ datasource db {
 }
 
 model Usuario {
-  id         Int       @id @default(autoincrement())
+  id         Int                @id @default(autoincrement())
   nombre     String
-  email      String    @unique
+  email      String             @unique
   password   String    
-  rol        String    @default("cliente")
-  creadoEn   DateTime  @default(now())
+  rol        String             @default("cliente")
+  creadoEn   DateTime           @default(now())
   pedidos    Pedido[]
+  historial  HistorialCambios[]
 }
 
 model Producto {
@@ -51,4 +52,13 @@ model ItemPedido {
   producto   Producto @relation(fields: [productoId], references: [id])
   cantidad   Int
   precioUnit Decimal  @db.Decimal(10, 2)
+}
+
+model HistorialCambios {
+  id       Int      @id @default(autoincrement())
+  adminId  Int
+  admin    Usuario  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  accion   String
+  detalle  String
+  creadoEn DateTime @default(now())
 }

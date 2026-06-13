@@ -1,16 +1,18 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+
 import productosRoutes from './routes/productos.js';
 import usuariosRoutes from './routes/usuarios.js';
 import pedidosRoutes from './routes/pedidos.js';
-
-dotenv.config();
+import historialRoutes from './routes/historial.js';
 
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());// para que el servidor entienda los datos enviados del front 
 
 
@@ -18,6 +20,7 @@ app.use(express.json());// para que el servidor entienda los datos enviados del 
 app.use('/api/productos', productosRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/pedidos', pedidosRoutes);
+app.use('/api/historial', historialRoutes);
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {

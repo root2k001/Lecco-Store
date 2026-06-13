@@ -39,7 +39,7 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                         {imagenesProducto.length > 0 ? (
                             imagenesProducto.map((imgUrl, index) => (
                                 <div className="carrusel-imagen-wrapper" key={index}>
-                                    <img src={imgUrl} alt={`${producto.name} - Vista ${index + 1}`} />
+                                    <img src={imgUrl} alt={`${producto.name} - Vista ${index + 1}`} style={producto.stock <= 0 ? { opacity: 0.6 } : {}} />
                                     {index === 0 && imagenesProducto.length > 1 && (
                                         <div className="scroll-indicador">
                                             <span>Deslizar hacia abajo</span>
@@ -69,6 +69,16 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                         </div>
                         
                         <p className="info-precio">${producto.price?.toLocaleString('es-CL')}</p>
+
+                        <div className="info-stock-status" style={{ margin: '15px 0', fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            {producto.stock <= 0 ? (
+                                <span style={{ color: '#ef4444' }}>🔴 Sin Stock</span>
+                            ) : producto.stock <= 3 ? (
+                                <span style={{ color: '#f59e0b' }}>⚠️ ¡Pocas unidades! (Quedan {producto.stock})</span>
+                            ) : (
+                                <span style={{ color: '#10b981' }}>🟢 Stock disponible: {producto.stock}</span>
+                            )}
+                        </div>
                         
                         {/* Selector de Color */}
                         <div className="info-color-seccion">
@@ -88,10 +98,16 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                         
                         {/* Botón de Añadir al Carrito */}
                         <button 
-                            className="info-btn-carrito" 
-                            onClick={() => agregarAlCarrito(producto)}
+                            className={`info-btn-carrito ${producto.stock <= 0 ? 'agotado' : ''}`} 
+                            disabled={producto.stock <= 0}
+                            style={producto.stock <= 0 ? { backgroundColor: '#cbd5e1', cursor: 'not-allowed', color: '#64748b' } : {}}
+                            onClick={() => {
+                                if (producto.stock > 0) {
+                                    agregarAlCarrito(producto)
+                                }
+                            }}
                         >
-                            Añadir al Carrito
+                            {producto.stock <= 0 ? 'Sin Stock' : 'Añadir al Carrito'}
                         </button>
                         
                         {/* Acordeones Desplegables */}

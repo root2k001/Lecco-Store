@@ -24,7 +24,7 @@ const ProductosList = () => {
             try {
                 setLoading(true)
                 setError(null)
-                const response = await fetch('http://localhost:3000/api/productos')
+                const response = await fetch('/api/productos')
 
                 if (!response.ok) {
                     throw new Error('Error al cargar los productos desde el servidor')
@@ -38,6 +38,7 @@ const ProductosList = () => {
                     price: Number(p.precio),
                     img: p.imagen || 'en proceso',
                     gender: p.genero,
+                    stock: p.stock,
                     quantity: p.stock
                 }))
                 setProductos(productosMapeados)
@@ -263,17 +264,40 @@ const ProductosList = () => {
                                         <div className='producto-imagen-wrapper'>
                                             <div className='producto-imagen' onClick={() => handleImageClick(producto)}>
                                                 {producto.img && producto.img !== 'en proceso' ?
-                                                    <img src={producto.img} alt={producto.name} /> :
+                                                    <img src={producto.img} alt={producto.name} style={producto.stock <= 0 ? { opacity: 0.5 } : {}} /> :
                                                     <div className='imagen-placeholder'>👓</div>
                                                 }
+                                                {producto.stock <= 0 && (
+                                                    <div className="producto-badge-agotado" style={{
+                                                        position: 'absolute',
+                                                        top: '15px',
+                                                        left: '15px',
+                                                        backgroundColor: 'rgba(254, 242, 242, 0.95)',
+                                                        color: '#ef4444',
+                                                        border: '1px solid #fca5a5',
+                                                        padding: '4px 10px',
+                                                        fontSize: '11px',
+                                                        fontWeight: 'bold',
+                                                        borderRadius: '2px',
+                                                        zIndex: 2,
+                                                        textTransform: 'uppercase',
+                                                        letterSpacing: '0.5px'
+                                                    }}>
+                                                        Sin Stock
+                                                    </div>
+                                                )}
                                                 <button
-                                                    className='btn-carrito-hover'
+                                                    className={`btn-carrito-hover ${producto.stock <= 0 ? 'agotado' : ''}`}
+                                                    disabled={producto.stock <= 0}
+                                                    style={producto.stock <= 0 ? { backgroundColor: '#94a3b8', cursor: 'not-allowed', color: '#fff', transform: 'none' } : {}}
                                                     onClick={(e) => {
                                                         e.stopPropagation()
-                                                        agregarAlCarrito(producto)
+                                                        if (producto.stock > 0) {
+                                                            agregarAlCarrito(producto)
+                                                        }
                                                     }}
                                                 >
-                                                    Añadir al Carrito
+                                                    {producto.stock <= 0 ? 'Sin Stock' : 'Añadir al Carrito'}
                                                 </button>
                                             </div>
                                         </div>

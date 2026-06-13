@@ -54,10 +54,38 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   const data = req.body; // Puede incluir { stock: 10, precio: 120 }
   
   try {
+    const productoPrevio = await prisma.producto.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!productoPrevio) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
     const productoActualizado = await prisma.producto.update({
       where: { id: parseInt(id) },
       data
     });
+
+    // Registrar la acción del administrador en el historial
+    if (data.stock !== undefined && data.stock !== productoPrevio.stock) {
+      await prisma.historialCambios.create({
+        data: {
+          adminId: req.usuario.id,
+          accion: 'Actualización de Stock',
+          detalle: `Producto "${productoActualizado.nombre}" (ID #${id}): stock modificado de ${productoPrevio.stock} a ${productoActualizado.stock}.`
+        }
+      });
+    } else {
+      await prisma.historialCambios.create({
+        data: {
+          adminId: req.usuario.id,
+          accion: 'Actualización de Producto',
+          detalle: `Producto "${productoActualizado.nombre}" (ID #${id}) actualizado.`
+        }
+      });
+    }
+
     res.json(productoActualizado);
   } catch (error) {
     console.error(error);
