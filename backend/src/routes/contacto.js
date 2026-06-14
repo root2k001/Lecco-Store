@@ -31,9 +31,6 @@ router.post('/', async (req, res) => {
     });
 
     // 2. Configurar el transporte de Nodemailer (SMTP)
-    let emailEnviado = false;
-    let warning = null;
-
     // Solo intentamos enviar si las credenciales mínimas de SMTP están configuradas
     if (process.env.SMTP_USER && process.env.SMTP_PASS) {
       try {
@@ -49,7 +46,8 @@ router.post('/', async (req, res) => {
 
         const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
 
-        await transporter.sendMail({
+        // Enviamos el correo en segundo plano para evitar timeouts (502 Gateway Error)
+        transporter.sendMail({
           from: `"Contacto Lecco" <${process.env.SMTP_USER}>`,
           replyTo: email.trim(),
           to: adminEmail,
@@ -83,21 +81,22 @@ router.post('/', async (req, res) => {
               </p>
             </div>
           `
+        }).then(() => {
+          console.log('Correo de contacto enviado exitosamente a:', adminEmail);
+        }).catch((emailErr) => {
+          console.error('Error al enviar el correo de contacto en segundo plano:', emailErr);
         });
-        emailEnviado = true;
-      } catch (emailErr) {
-        console.error('Error enviando el correo de contacto:', emailErr);
-        warning = 'El mensaje se guardó en la base de datos pero no pudo enviarse por correo (error en la configuración SMTP).';
+
+      } catch (transporterErr) {
+        console.error('Error al inicializar el transporte de nodemailer:', transporterErr);
       }
     } else {
-      warning = 'El mensaje se guardó en la base de datos pero no se envió por correo (SMTP no configurado en las variables de entorno).';
+      console.warn('El envío de correo de contacto está deshabilitado (SMTP_USER o SMTP_PASS no configurados).');
     }
 
     res.status(201).json({
       message: 'Mensaje de contacto recibido y guardado exitosamente',
-      mensaje: nuevoMensaje,
-      emailEnviado,
-      warning
+      mensaje: nuevoMensaje
     });
   } catch (error) {
     console.error('Error al procesar el formulario de contacto:', error);
