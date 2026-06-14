@@ -41,7 +41,8 @@ router.post('/', async (req, res) => {
           auth: {
             user: process.env.SMTP_USER,
             pass: process.env.SMTP_PASS
-          }
+          },
+          family: 4 // Fuerza el uso de IPv4 (evita el error ENETUNREACH de IPv6 en Render)
         });
 
         const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
