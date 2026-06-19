@@ -68,7 +68,7 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                             </button>
                         </div>
                         
-                        <p className="info-precio">${producto.price?.toLocaleString('es-CL')}</p>
+                        <p className="info-precio">S/ {producto.price?.toLocaleString('es-PE')}</p>
 
                         <div className="info-stock-status" style={{ margin: '15px 0', fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                             {producto.stock <= 0 ? (

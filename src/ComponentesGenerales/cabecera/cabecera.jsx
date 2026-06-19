@@ -14,34 +14,41 @@ function Cabecera() {
     const cantidadTotal = carrito.reduce((acc, item) => acc + item.quantity, 0)
     const [mostrarModal, setMostrarModal] = useState(false)
     const [showAuthModal, setShowAuthModal] = useState(false)
+    const [menuMobileAbierto, setMenuMobileAbierto] = useState(false)
 
     const toggleModal = () => setMostrarModal(!mostrarModal)
+    const toggleMenuMobile = () => setMenuMobileAbierto(!menuMobileAbierto)
     const total = carrito.reduce((acc, item) => acc + (item.price * item.quantity), 0)
 
 
     return (
         <section className="header">
             <Link to="/" className="logo">Lecco</Link>
-            <nav className="navigation">
+
+            <button className="menu-hamburguesa" onClick={toggleMenuMobile}>
+                {menuMobileAbierto ? '✕' : '☰'}
+            </button>
+
+            <nav className={`navigation ${menuMobileAbierto ? 'nav-abierto' : ''}`}>
                 <ul>
                     <li>
-                        <Link to="/" className='menu-link'>Inicio</Link>
+                        <Link to="/" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Inicio</Link>
                     </li>
                     <li>
-                        <Link to="/Coleccion" className='menu-link'>Colección</Link>
+                        <Link to="/Coleccion" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Colección</Link>
                     </li>
                     <li>
-                        <Link to="/Nosotros" className='menu-link'>Nosotros</Link>
+                        <Link to="/Nosotros" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Nosotros</Link>
                     </li>
                     <li>
-                        <Link to="/Contacto" className='menu-link'>Contacto</Link>
+                        <Link to="/Contacto" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Contacto</Link>
                     </li>
                     {!usuario ? (
                         <li>
                             <button 
                                 className="carrito-icono" 
                                 style={{ marginRight: '15px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '24px' }} 
-                                onClick={() => setShowAuthModal(true)}
+                                onClick={() => { setShowAuthModal(true); setMenuMobileAbierto(false); }}
                                 title="Iniciar Sesión"
                             >
                                 👤
@@ -50,14 +57,14 @@ function Cabecera() {
                     ) : (
                         <li className="usuario-nav">
                             {usuario.rol === 'admin' && (
-                                <Link to="/admin" className="menu-link" style={{color: '#3b82f6', fontWeight: 'bold'}}>Panel Admin</Link>
+                                <Link to="/admin" className="menu-link" style={{color: '#3b82f6', fontWeight: 'bold'}} onClick={() => setMenuMobileAbierto(false)}>Panel Admin</Link>
                             )}
-                            <Link to="/perfil" className="usuario-nombre" style={{textDecoration: 'none'}} title="Ir a Mi Perfil">Hola, {usuario.nombre}</Link>
-                            <button className="btn-logout" onClick={logout}>Cerrar Sesión</button>
+                            <Link to="/perfil" className="usuario-nombre" style={{textDecoration: 'none'}} title="Ir a Mi Perfil" onClick={() => setMenuMobileAbierto(false)}>Hola, {usuario.nombre}</Link>
+                            <button className="btn-logout" onClick={() => { logout(); setMenuMobileAbierto(false); }}>Cerrar Sesión</button>
                         </li>
                     )}
                     <li className="carrito-container">
-                        <button className="carrito-icono" onClick={toggleModal}>
+                        <button className="carrito-icono" onClick={() => { toggleModal(); setMenuMobileAbierto(false); }}>
                             🛒
                         </button>
                         {cantidadTotal > 0 && (
@@ -113,7 +120,7 @@ function Cabecera() {
                                                 </div>
                                             </div>
                                             <div className="carrito-item-acciones">
-                                                <span className="carrito-item-precio">${(item.price * item.quantity).toLocaleString('es-CL')}</span>
+                                                <span className="carrito-item-precio">S/ {(item.price * item.quantity).toLocaleString('es-PE')}</span>
                                                 <button 
                                                     className="carrito-item-eliminar"
                                                     onClick={() => eliminarDelCarrito(item.id)}
@@ -150,7 +157,7 @@ function Cabecera() {
                                                 <div className="fav-card-meta">
                                                     <div className="fav-card-datos">
                                                         <h4 className="fav-card-nombre">{fav.name}</h4>
-                                                        <p className="fav-card-precio">${fav.price?.toLocaleString('es-CL')}</p>
+                                                        <p className="fav-card-precio">S/ {fav.price?.toLocaleString('es-PE')}</p>
                                                     </div>
                                                     <button
                                                         className="fav-card-btn-carrito"
@@ -174,7 +181,7 @@ function Cabecera() {
                             <div className="carrito-modal-footer">
                                 <div className="carrito-total">
                                     <span>Total:</span>
-                                    <span>${total}</span>
+                                    <span>S/ {total.toLocaleString('es-PE')}</span>
                                 </div>
                                 <Link 
                                     to="/Carrito" 

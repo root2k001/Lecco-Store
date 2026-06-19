@@ -2,8 +2,36 @@ import { Router } from 'express';
 import prisma from '../prisma.js';
 import nodemailer from 'nodemailer';
 import dns from 'dns';
+import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
 
 const router = Router();
+
+// GET /api/contacto — Obtener todos los mensajes (Admin)
+router.get('/', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const mensajes = await prisma.mensajeContacto.findMany({
+      orderBy: { creadoEn: 'desc' }
+    });
+    res.json(mensajes);
+  } catch (error) {
+    console.error('Error al obtener mensajes de contacto:', error);
+    res.status(500).json({ error: 'Error al obtener los mensajes de contacto' });
+  }
+});
+
+// DELETE /api/contacto/:id — Eliminar un mensaje (Admin)
+router.delete('/:id', verifyToken, verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    await prisma.mensajeContacto.delete({
+      where: { id: parseInt(id) }
+    });
+    res.json({ message: 'Mensaje eliminado exitosamente' });
+  } catch (error) {
+    console.error('Error al eliminar mensaje de contacto:', error);
+    res.status(500).json({ error: 'Error al eliminar el mensaje' });
+  }
+});
 
 // Endpoint para recibir formulario de contacto
 router.post('/', async (req, res) => {

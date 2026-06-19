@@ -1,0 +1,83 @@
+.notfound-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.notfound-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.notfound-numero {
+  font-family: 'Outfit', sans-serif;
+  font-size: 8rem;
+  font-weight: 200;
+  letter-spacing: 12px;
+  color: #e2e8f0;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.notfound-container h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.notfound-container p {
+  color: #94a3b8;
+  font-size: 0.95rem;
+  margin-bottom: 32px;
+  max-width: 380px;
+}
+
+.notfound-acciones {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.notfound-btn-principal {
+  padding: 14px 32px;
+  background-color: #111;
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: background-color 0.25s ease;
+}
+
+.notfound-btn-principal:hover {
+  background-color: #333;
+}
+
+.notfound-btn-secundario {
+  padding: 14px 32px;
+  background: none;
+  border: 1px solid #d1d5db;
+  color: #475569;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  transition: all 0.25s ease;
+}
+
+.notfound-btn-secundario:hover {
+  border-color: #1a1a1a;
+  color: #1a1a1a;
+}

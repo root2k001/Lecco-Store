@@ -6,6 +6,8 @@ import usuariosRoutes from './routes/usuarios.js';
 import pedidosRoutes from './routes/pedidos.js';
 import historialRoutes from './routes/historial.js';
 import contactoRoutes from './routes/contacto.js';
+import statsRoutes from './routes/stats.js';
+import uploadRoutes from './routes/upload.js';
 
 const app = express();
 
@@ -22,6 +24,8 @@ app.use('/api/productos', productosRoutes);
 app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/historial', historialRoutes);
+app.use('/api/stats', statsRoutes);
+app.use('/api/upload', uploadRoutes);
 app.use('/api/contacto', contactoRoutes);
 
 // Ruta de prueba

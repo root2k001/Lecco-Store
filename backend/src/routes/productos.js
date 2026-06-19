@@ -97,12 +97,29 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
 router.delete('/:id', verifyToken, verifyAdmin, async (req, res) => {
   const { id } = req.params;
   try {
+    const producto = await prisma.producto.findUnique({ where: { id: parseInt(id) } });
+    if (!producto) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
     await prisma.producto.delete({
       where: { id: parseInt(id) }
     });
+
+    await prisma.historialCambios.create({
+      data: {
+        adminId: req.usuario.id,
+        accion: 'Eliminación de Producto',
+        detalle: `Producto "${producto.nombre}" (ID #${id}) eliminado del inventario.`
+      }
+    });
+
     res.json({ message: 'Producto eliminado exitosamente' });
   } catch (error) {
     console.error(error);
+    if (error.code === 'P2003') {
+      return res.status(400).json({ error: 'No se puede eliminar este producto porque ya pertenece a un pedido registrado en el historial de ventas. Te recomendamos cambiar su stock a 0 en su lugar.' });
+    }
     res.status(500).json({ error: 'Error al eliminar el producto' });
   }
 });

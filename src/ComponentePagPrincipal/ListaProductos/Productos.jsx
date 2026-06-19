@@ -308,7 +308,7 @@ const ProductosList = () => {
                                             <div className='producto-meta-fila'>
                                                 <div className='producto-datos-principales'>
                                                     <h3 className='producto-nombre' onClick={() => handleImageClick(producto)}>{producto.name}</h3>
-                                                    <p className='precio'>${producto.price.toLocaleString('es-CL')}</p>
+                                                    <p className='precio'>S/ {producto.price.toLocaleString('es-PE')}</p>
 
                                                     <div className='producto-swatches'>
                                                         {swatches.map((color, idx) => (

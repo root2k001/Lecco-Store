@@ -1,20 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import AdminMetricas from './AdminMetricas';
+import AdminPedidos from './AdminPedidos';
+import AdminProductos from './AdminProductos';
+import AdminMensajes from './AdminMensajes';
+import AdminHistorial from './AdminHistorial';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
-  const { usuario, token } = useAuth();
+  const { usuario, token, logout } = useAuth();
   const navigate = useNavigate();
-  
-  const [activeTab, setActiveTab] = useState('pedidos');
+
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [pedidos, setPedidos] = useState([]);
   const [productos, setProductos] = useState([]);
   const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
-    // Si no está logueado o no es admin, redirigir
     if (!usuario || usuario.rol !== 'admin') {
       navigate('/');
     } else {
@@ -25,21 +29,27 @@ function AdminDashboard() {
   const cargarDatos = async () => {
     setCargando(true);
     try {
-      // Cargar pedidos
-      const resPedidos = await fetch('/api/pedidos/admin/todos', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const dataPedidos = await resPedidos.json();
-      
-      // Cargar productos
-      const resProductos = await fetch('/api/productos');
-      const dataProductos = await resProductos.json();
+      const [resPedidos, resProductos, resHistorial] = await Promise.all([
+        fetch('/api/pedidos/admin/todos', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch('/api/productos'),
+        fetch('/api/historial', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+      ]);
 
-      // Cargar historial de cambios
-      const resHistorial = await fetch('/api/historial', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const dataHistorial = await resHistorial.json();
+      if (resPedidos.status === 401 || resHistorial.status === 401) {
+        logout();
+        navigate('/');
+        return;
+      }
+
+      const [dataPedidos, dataProductos, dataHistorial] = await Promise.all([
+        resPedidos.json(),
+        resProductos.json(),
+        resHistorial.json()
+      ]);
 
       if (resPedidos.ok) setPedidos(dataPedidos);
       if (resProductos.ok) setProductos(dataProductos);
@@ -51,210 +61,138 @@ function AdminDashboard() {
     }
   };
 
-  const actualizarEstadoPedido = async (id, nuevoEstado) => {
-    try {
-      const res = await fetch(`/api/pedidos/admin/estado/${id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ estado: nuevoEstado })
-      });
-
-      if (res.ok) {
-        setPedidos(pedidos.map(p => p.id === id ? { ...p, estado: nuevoEstado } : p));
-        cargarDatos(); // Recargar para actualizar el historial
-      } else {
-        alert('Error al actualizar el estado');
-      }
-    } catch (error) {
-      console.error(error);
+  const tabs = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+        </svg>
+      )
+    },
+    {
+      id: 'pedidos',
+      label: 'Pedidos',
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" />
+        </svg>
+      )
+    },
+    {
+      id: 'productos',
+      label: 'Productos',
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" y1="22.08" x2="12" y2="12" />
+        </svg>
+      )
+    },
+    {
+      id: 'mensajes',
+      label: 'Mensajes',
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
+        </svg>
+      )
+    },
+    {
+      id: 'historial',
+      label: 'Historial',
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+        </svg>
+      )
     }
-  };
+  ];
 
-  const actualizarStock = async (id, nuevoStock) => {
-    try {
-      const res = await fetch(`/api/productos/${id}`, {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
-        },
-        body: JSON.stringify({ stock: parseInt(nuevoStock) })
-      });
-
-      if (res.ok) {
-        setProductos(productos.map(p => p.id === id ? { ...p, stock: parseInt(nuevoStock) } : p));
-        alert('Stock actualizado');
-        cargarDatos(); // Recargar para actualizar el historial
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  if (cargando) return <div className="admin-loading">Cargando Panel de Control...</div>;
+  if (cargando) {
+    return (
+      <div className="admin-loading">
+        <div className="admin-loading-spinner" />
+        <p>Cargando Panel de Control...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-container">
-      <div className="admin-sidebar">
-        <h2>Panel Admin</h2>
-        <ul>
-          <li 
-            className={activeTab === 'pedidos' ? 'active' : ''} 
-            onClick={() => setActiveTab('pedidos')}
-          >
-            📦 Gestión de Pedidos
-          </li>
-          <li 
-            className={activeTab === 'productos' ? 'active' : ''} 
-            onClick={() => setActiveTab('productos')}
-          >
-            👟 Inventario
-          </li>
-          <li 
-            className={activeTab === 'historial' ? 'active' : ''} 
-            onClick={() => setActiveTab('historial')}
-          >
-            📜 Historial de Cambios
-          </li>
-        </ul>
-      </div>
+      {/* Sidebar */}
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-brand">
+          <span className="admin-brand-text">Lecco</span>
+          <span className="admin-brand-sub">Admin Panel</span>
+        </div>
 
-      <div className="admin-content">
-        {activeTab === 'pedidos' && (
-          <div className="admin-section">
-            <h3>Todos los Pedidos</h3>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Cliente</th>
-                  <th>Fecha</th>
-                  <th>Total</th>
-                  <th>Dirección</th>
-                  <th>Estado</th>
-                  <th>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pedidos.map(pedido => (
-                  <tr key={pedido.id}>
-                    <td>#{pedido.id}</td>
-                    <td>{pedido.usuario?.nombre} ({pedido.usuario?.email})</td>
-                    <td>{new Date(pedido.creadoEn).toLocaleDateString()}</td>
-                    <td>${pedido.total}</td>
-                    <td>{pedido.direccion}, {pedido.ciudad}</td>
-                    <td>
-                      <span className={`estado-badge ${pedido.estado}`}>
-                        {pedido.estado}
-                      </span>
-                    </td>
-                    <td>
-                      <select 
-                        value={pedido.estado} 
-                        onChange={(e) => actualizarEstadoPedido(pedido.id, e.target.value)}
-                      >
-                        <option value="pendiente">Pendiente</option>
-                        <option value="procesando">Procesando</option>
-                        <option value="enviado">Enviado</option>
-                        <option value="entregado">Entregado</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <nav className="admin-sidebar-nav">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              className={`admin-nav-item ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
+            >
+              {tab.icon}
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="admin-sidebar-footer">
+          <div className="admin-user-info">
+            <div className="admin-user-avatar">
+              {usuario?.nombre?.charAt(0).toUpperCase()}
+            </div>
+            <div className="admin-user-data">
+              <span className="admin-user-name">{usuario?.nombre}</span>
+              <span className="admin-user-role">Administrador</span>
+            </div>
           </div>
+          <button className="btn-volver-tienda" onClick={() => navigate('/')}>
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none">
+              <path d="M19 12H5" /><polyline points="12 19 5 12 12 5" />
+            </svg>
+            Volver a la tienda
+          </button>
+        </div>
+      </aside>
+
+      {/* Contenido principal */}
+      <main className="admin-content">
+        {activeTab === 'dashboard' && (
+          <AdminMetricas token={token} />
+        )}
+
+        {activeTab === 'pedidos' && (
+          <AdminPedidos
+            pedidos={pedidos}
+            token={token}
+            onReload={cargarDatos}
+          />
         )}
 
         {activeTab === 'productos' && (
-          <div className="admin-section">
-            <h3>Inventario de Productos</h3>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Nombre</th>
-                  <th>Precio</th>
-                  <th>Stock Actual</th>
-                  <th>Actualizar Stock</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productos.map(producto => (
-                  <tr key={producto.id}>
-                    <td>#{producto.id}</td>
-                    <td>{producto.nombre}</td>
-                    <td>${producto.precio}</td>
-                    <td>{producto.stock}</td>
-                    <td>
-                      <div className="stock-update-control">
-                        <input 
-                          type="number" 
-                          id={`stock-${producto.id}`}
-                          defaultValue={producto.stock}
-                          min="0"
-                        />
-                        <button 
-                          onClick={() => {
-                            const val = document.getElementById(`stock-${producto.id}`).value;
-                            actualizarStock(producto.id, val);
-                          }}
-                        >
-                          Guardar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <AdminProductos
+            productos={productos}
+            token={token}
+            onReload={cargarDatos}
+          />
+        )}
+
+        {activeTab === 'mensajes' && (
+          <AdminMensajes token={token} />
         )}
 
         {activeTab === 'historial' && (
-          <div className="admin-section">
-            <h3>Historial de Cambios Realizados</h3>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Fecha y Hora</th>
-                  <th>Administrador</th>
-                  <th>Acción</th>
-                  <th>Detalles del Cambio</th>
-                </tr>
-              </thead>
-              <tbody>
-                {historial.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" style={{ textAlign: 'center', color: '#64748b', padding: '30px' }}>
-                      No hay cambios registrados en el historial.
-                    </td>
-                  </tr>
-                ) : (
-                  historial.map(log => (
-                    <tr key={log.id}>
-                      <td style={{ whiteSpace: 'nowrap' }}>{new Date(log.creadoEn).toLocaleString('es-CL')}</td>
-                      <td>
-                        <strong>{log.admin?.nombre || 'Admin'}</strong>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>{log.admin?.email || ''}</div>
-                      </td>
-                      <td>
-                        <span className={`accion-badge ${log.accion.toLowerCase().includes('stock') ? 'badge-stock' : 'badge-pedido'}`}>
-                          {log.accion}
-                        </span>
-                      </td>
-                      <td>{log.detalle}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          <AdminHistorial historial={historial} />
         )}
-      </div>
+      </main>
     </div>
   );
 }

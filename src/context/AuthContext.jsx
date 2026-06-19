@@ -5,18 +5,11 @@ const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-    const [usuario, setUsuario] = useState(null);
-    const [token, setToken] = useState(null);
-
-    // Cargar sesión guardada al abrir la aplicación
-    useEffect(() => {
+    const [usuario, setUsuario] = useState(() => {
         const storedUser = localStorage.getItem('lecco_usuario');
-        const storedToken = localStorage.getItem('lecco_token');
-        if (storedUser && storedToken) {
-            setUsuario(JSON.parse(storedUser));
-            setToken(storedToken);
-        }
-    }, []);
+        return storedUser ? JSON.parse(storedUser) : null;
+    });
+    const [token, setToken] = useState(() => localStorage.getItem('lecco_token'));
 
     const guardarSesion = (user, jwtToken) => {
         setUsuario(user);

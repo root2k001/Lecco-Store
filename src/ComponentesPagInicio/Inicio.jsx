@@ -1,22 +1,130 @@
-import './inicio.css'
+import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import Cabecera from '../ComponentesGenerales/cabecera/cabecera';
+import PiePagina from '../ComponentesGenerales/footer/Footer';
+import './inicio.css';
 
-import Columna1  from './Columna1';
-import Columna2  from './Columna2';
-function Inicio(){
+function Inicio() {
+  const [productosDestacados, setProductosDestacados] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-return(
+  useEffect(() => {
+    const fetchDestacados = async () => {
+      try {
+        const res = await fetch('/api/productos');
+        const data = await res.json();
+        // Tomamos 3 o 4 productos al azar o los más recientes como destacados
+        setProductosDestacados(data.slice(0, 4));
+      } catch (err) {
+        console.error('Error cargando destacados', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDestacados();
+  }, []);
 
-    <div className="inicio-container">
-          <Columna1 />
-          <Columna2 />
+  return (
+    <div className="inicio-pagina">
+      <Cabecera />
+
+      {/* HERO SECTION */}
+      <section className="hero-section">
+        <div className="hero-background"></div>
+        <div className="hero-overlay"></div>
+        <div className="hero-content">
+          <h1 className="hero-title">Lecco</h1>
+          <p className="hero-subtitle">El estilo perfecto empieza por tu mirada</p>
+          <Link to="/Coleccion" className="hero-btn">Ver Colección</Link>
+        </div>
+      </section>
+
+      {/* CATEGORIES SECTION */}
+      <section className="categorias-section">
+        <h2 className="section-title">Encuentra tu estilo</h2>
+        <div className="categorias-grid">
+          <div className="categoria-card">
+            <div className="categoria-img-placeholder hombre-bg"></div>
+            <div className="categoria-info">
+              <h3>Para Él</h3>
+              <Link to="/Coleccion" className="categoria-link">Explorar →</Link>
+            </div>
+          </div>
+          <div className="categoria-card">
+            <div className="categoria-img-placeholder mujer-bg"></div>
+            <div className="categoria-info">
+              <h3>Para Ella</h3>
+              <Link to="/Coleccion" className="categoria-link">Explorar →</Link>
+            </div>
+          </div>
+          <div className="categoria-card">
+            <div className="categoria-img-placeholder unisex-bg"></div>
+            <div className="categoria-info">
+              <h3>Unisex</h3>
+              <Link to="/Coleccion" className="categoria-link">Explorar →</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* DESTACADOS SECTION */}
+      <section className="destacados-section">
+        <div className="destacados-header">
+          <h2 className="section-title">Nuevos Ingresos</h2>
+          <Link to="/Coleccion" className="link-ver-todo">Ver todos</Link>
         </div>
 
+        {loading ? (
+          <div className="destacados-grid skeleton-grid">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="producto-skeleton">
+                <div className="skeleton-imagen"></div>
+                <div className="skeleton-texto"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="destacados-grid">
+            {productosDestacados.map(prod => (
+              <Link to="/Coleccion" key={prod.id} className="destacado-card">
+                <div className="destacado-img-wrapper">
+                  {prod.imagen && prod.imagen !== 'en proceso' ? (
+                    <img src={prod.imagen} alt={prod.nombre} />
+                  ) : (
+                    <div className="imagen-placeholder">👓</div>
+                  )}
+                </div>
+                <div className="destacado-info">
+                  <h4>{prod.nombre}</h4>
+                  <p>S/ {Number(prod.precio).toLocaleString('es-PE')}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
 
+      {/* STORYTELLING SECTION */}
+      <section className="historia-section">
+        <div className="historia-content">
+          <div className="historia-texto">
+            <h2>Artesanía y Diseño Premium</h2>
+            <p>
+              En Lecco, creemos que las gafas son más que un accesorio: son una extensión de tu personalidad. 
+              Cada montura está diseñada con atención al detalle y fabricada con materiales de la más alta calidad 
+              para garantizar comodidad y durabilidad sin comprometer el estilo.
+            </p>
+            <Link to="/Nosotros" className="btn-secundario">Conócenos</Link>
+          </div>
+          <div className="historia-imagen">
+            <div className="historia-img-placeholder"></div>
+          </div>
+        </div>
+      </section>
 
-);
-
-
+      <PiePagina />
+    </div>
+  );
 }
-
 
 export default Inicio;

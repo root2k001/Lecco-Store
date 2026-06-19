@@ -127,7 +127,7 @@ function Carrito() {
                                     <div className="carrito-item-info">
                                         <span className="carrito-item-nombre">{item.name}</span>
                                         <span className="carrito-item-genero">{item.gender}</span>
-                                        <span className="carrito-item-precio-unitario">${item.price} c/u</span>
+                                        <span className="carrito-item-precio-unitario">S/ {item.price.toLocaleString('es-PE')} c/u</span>
                                     </div>
                                     <div className="carrito-item-cantidad-control">
                                         <button 
@@ -149,7 +149,7 @@ function Carrito() {
                                         </button>
                                     </div>
                                     <div className="carrito-item-acciones">
-                                        <span className="carrito-item-precio">${item.price * item.quantity}</span>
+                                        <span className="carrito-item-precio">S/ {(item.price * item.quantity).toLocaleString('es-PE')}</span>
                                         <button 
                                             className="carrito-item-eliminar"
                                             onClick={() => eliminarDelCarrito(item.id)}
@@ -166,7 +166,7 @@ function Carrito() {
                         <h2>Resumen del Pedido</h2>
                         <div className="carrito-resumen-item">
                             <span>Subtotal ({cantidadTotal} producto{cantidadTotal !== 1 ? 's' : ''})</span>
-                            <span>${total}</span>
+                            <span>S/ {total.toLocaleString('es-PE')}</span>
                         </div>
                         <div className="carrito-resumen-item">
                             <span>Envío</span>
@@ -174,7 +174,7 @@ function Carrito() {
                         </div>
                         <div className="carrito-resumen-item total">
                             <span>Total</span>
-                            <span>${total}</span>
+                            <span>S/ {total.toLocaleString('es-PE')}</span>
                         </div>
 
                         {!mostrarEnvio ? (
