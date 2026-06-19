@@ -151,7 +151,7 @@ function AdminPedidos({ pedidos, token, onReload }) {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>

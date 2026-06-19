@@ -253,7 +253,10 @@ function ProductoModal({ producto, onClose, onSave, token }) {
                     <img
                       src={form.imagen}
                       alt="Preview"
-                      onError={e => e.target.style.display = 'none'}
+                      onError={e => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/200x200?text=URL+Inv%C3%A1lida';
+                      }}
                     />
                     <button
                       type="button"

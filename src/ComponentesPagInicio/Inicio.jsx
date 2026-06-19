@@ -4,8 +4,39 @@ import Cabecera from '../ComponentesGenerales/cabecera/cabecera';
 import PiePagina from '../ComponentesGenerales/footer/Footer';
 import './inicio.css';
 
+function CategoriaCarrusel({ imagenes, fallbackClass }) {
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    if (!imagenes || imagenes.length <= 1) return;
+    // Rota la imagen cada 3 segundos
+    const interval = setInterval(() => {
+      setIdx(prev => (prev + 1) % imagenes.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [imagenes]);
+
+  if (!imagenes || imagenes.length === 0) {
+    return <div className={`categoria-img-placeholder ${fallbackClass}`}></div>;
+  }
+
+  return (
+    <div className="categoria-carrusel-container">
+      {imagenes.map((img, i) => (
+        <img 
+          key={i} 
+          src={img} 
+          alt="Categoria" 
+          className={`categoria-carrusel-img ${i === idx ? 'active' : ''}`}
+        />
+      ))}
+    </div>
+  );
+}
+
 function Inicio() {
   const [productosDestacados, setProductosDestacados] = useState([]);
+  const [todosLosProductos, setTodosLosProductos] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -13,6 +44,7 @@ function Inicio() {
       try {
         const res = await fetch('/api/productos');
         const data = await res.json();
+        setTodosLosProductos(data);
         // Tomamos 3 o 4 productos al azar o los más recientes como destacados
         setProductosDestacados(data.slice(0, 4));
       } catch (err) {
@@ -43,27 +75,36 @@ function Inicio() {
       <section className="categorias-section">
         <h2 className="section-title">Encuentra tu estilo</h2>
         <div className="categorias-grid">
-          <div className="categoria-card">
-            <div className="categoria-img-placeholder hombre-bg"></div>
+          <Link to="/Coleccion" className="categoria-card">
+            <CategoriaCarrusel 
+              imagenes={todosLosProductos.filter(p => p.genero === 'hombre' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)} 
+              fallbackClass="hombre-bg" 
+            />
             <div className="categoria-info">
               <h3>Para Él</h3>
-              <Link to="/Coleccion" className="categoria-link">Explorar →</Link>
+              <span className="categoria-link">Explorar →</span>
             </div>
-          </div>
-          <div className="categoria-card">
-            <div className="categoria-img-placeholder mujer-bg"></div>
+          </Link>
+          <Link to="/Coleccion" className="categoria-card">
+            <CategoriaCarrusel 
+              imagenes={todosLosProductos.filter(p => p.genero === 'mujer' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)} 
+              fallbackClass="mujer-bg" 
+            />
             <div className="categoria-info">
               <h3>Para Ella</h3>
-              <Link to="/Coleccion" className="categoria-link">Explorar →</Link>
+              <span className="categoria-link">Explorar →</span>
             </div>
-          </div>
-          <div className="categoria-card">
-            <div className="categoria-img-placeholder unisex-bg"></div>
+          </Link>
+          <Link to="/Coleccion" className="categoria-card">
+            <CategoriaCarrusel 
+              imagenes={todosLosProductos.filter(p => p.genero === 'unisex' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)} 
+              fallbackClass="unisex-bg" 
+            />
             <div className="categoria-info">
               <h3>Unisex</h3>
-              <Link to="/Coleccion" className="categoria-link">Explorar →</Link>
+              <span className="categoria-link">Explorar →</span>
             </div>
-          </div>
+          </Link>
         </div>
       </section>
 
