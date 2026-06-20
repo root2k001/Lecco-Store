@@ -52,7 +52,8 @@ function AdminDashboard() {
       ]);
 
       if (resPedidos.ok) setPedidos(dataPedidos);
-      if (resProductos.ok) setProductos(dataProductos);
+      // La API de productos ahora devuelve { productos, total, page, totalPages }
+      if (resProductos.ok) setProductos(dataProductos.productos || dataProductos);
       if (resHistorial.ok) setHistorial(dataHistorial);
     } catch (error) {
       console.error('Error cargando datos del panel:', error);
