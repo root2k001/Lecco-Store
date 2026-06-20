@@ -139,7 +139,7 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                                 </button>
                                 <div className={`acordeon-contenido ${envioAbierto ? 'abierto' : ''}`}>
                                     <p>
-                                        Envío express gratuito a todo Chile. Las entregas se realizan entre 2 y 4 días 
+                                        Envío express gratuito a todo Perú. Las entregas se realizan entre 2 y 4 días 
                                         hábiles. Devoluciones autorizadas dentro de los primeros 30 días posteriores a la recepción.
                                     </p>
                                 </div>
