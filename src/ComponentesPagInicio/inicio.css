@@ -331,13 +331,11 @@
   flex: 1;
 }
 
-.historia-img-placeholder {
+.historia-img-real {
   width: 100%;
   height: 500px;
-  background-color: #e2e8f0;
-  /* background-image: url('...'); cuando haya imagen */
-  background-size: cover;
-  background-position: center;
+  object-fit: cover;
+  display: block;
 }
 
 /* --- RESPONSIVE --- */

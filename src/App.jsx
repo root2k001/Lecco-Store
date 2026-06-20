@@ -12,6 +12,7 @@ import { ToastProvider } from './context/ToastContext'
 
 import AdminDashboard from './ComponentesAdmin/AdminDashboard.jsx'
 import Perfil from './ComponentePerfil/Perfil.jsx'
+import RutaAdmin from './ComponentesGenerales/RutaAdmin/RutaAdmin.jsx'
 
 function App() {
   return (
@@ -25,7 +26,7 @@ function App() {
           <Route path="/Carrito" element={<Carrito />} />
           <Route path="/Nosotros" element={<Nosotros />} />
           <Route path="/Contacto" element={<Contacto />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={<RutaAdmin><AdminDashboard /></RutaAdmin>} />
           <Route path="/perfil" element={<Perfil />} />
           <Route path="*" element={<NotFound />} />
           </Routes>

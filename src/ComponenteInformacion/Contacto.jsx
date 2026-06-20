@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from 'react'  // uso de estados 
 import Cabecera from "../ComponentesGenerales/cabecera/cabecera"
 import './Contacto.css'
 
@@ -17,10 +17,16 @@ function Contacto() {
     const handleChange = (e) => {
         const { name, value } = e.target
         setFormData(prev => ({ ...prev, [name]: value }))
-        
+        //validacion de campos modificados en cada input del formulario 
+
+
         if (errores[name]) {
             setErrores(prev => ({ ...prev, [name]: '' }))
         }
+
+        //sobreescribe el error del campo dejandolo vacio 
+
+
     }
 
     const validarFormulario = () => {
@@ -47,7 +53,7 @@ function Contacto() {
     const handleSubmit = async (e) => {
         e.preventDefault()
         setErrorGeneral('')
-        
+
         if (validarFormulario()) {
             setEnviando(true)
             try {
@@ -106,9 +112,9 @@ function Contacto() {
                     <p className="contacto-descripcion">
                         ¿Tienes alguna pregunta o comentario? Estamos aquí para ayudarte.
                     </p>
-                    
+
                     <div className="contacto-detalles">
-                       
+
                         <div className="detalle-item">
                             <span className="detalle-icono">📞</span>
                             <div>

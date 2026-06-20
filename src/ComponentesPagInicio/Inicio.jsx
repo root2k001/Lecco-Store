@@ -42,11 +42,13 @@ function Inicio() {
   useEffect(() => {
     const fetchDestacados = async () => {
       try {
-        const res = await fetch('/api/productos');
+        const res = await fetch('/api/productos?page=1&limit=50');
         const data = await res.json();
-        setTodosLosProductos(data);
-        // Tomamos 3 o 4 productos al azar o los más recientes como destacados
-        setProductosDestacados(data.slice(0, 4));
+        // La API ahora devuelve { productos, total, ... }
+        const lista = data.productos || data;
+        setTodosLosProductos(lista);
+        // Tomamos 4 productos como destacados
+        setProductosDestacados(lista.slice(0, 4));
       } catch (err) {
         console.error('Error cargando destacados', err);
       } finally {
@@ -158,7 +160,7 @@ function Inicio() {
             <Link to="/Nosotros" className="btn-secundario">Conócenos</Link>
           </div>
           <div className="historia-imagen">
-            <div className="historia-img-placeholder"></div>
+            <img src="/historiaLecco.png" alt="Artesanía y Diseño Premium Lecco" className="historia-img-real" />
           </div>
         </div>
       </section>

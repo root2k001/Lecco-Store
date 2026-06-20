@@ -5,6 +5,78 @@ import Cabecera from '../ComponentesGenerales/cabecera/cabecera';
 import PiePagina from '../ComponentesGenerales/footer/Footer';
 import './Perfil.css';
 
+// Modal de detalle de pedido
+function ModalDetallePedido({ pedido, onClose }) {
+  if (!pedido) return null;
+
+  return (
+    <div className="detalle-pedido-overlay" onClick={onClose}>
+      <div className="detalle-pedido-modal" onClick={e => e.stopPropagation()}>
+        <div className="detalle-pedido-header">
+          <div>
+            <h3>Pedido #{pedido.id}</h3>
+            <span className={`pedido-estado ${pedido.estado}`}>{pedido.estado}</span>
+          </div>
+          <button className="detalle-pedido-cerrar" onClick={onClose}>×</button>
+        </div>
+
+        <div className="detalle-pedido-body">
+          {/* Fecha y dirección */}
+          <div className="detalle-pedido-meta">
+            <div className="detalle-meta-item">
+              <span className="detalle-meta-label">📅 Fecha</span>
+              <span>{new Date(pedido.creadoEn).toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+            </div>
+            {pedido.direccion && (
+              <div className="detalle-meta-item">
+                <span className="detalle-meta-label">📍 Dirección de envío</span>
+                <span>{pedido.direccion}, {pedido.ciudad}{pedido.codigoPostal ? ` (${pedido.codigoPostal})` : ''}</span>
+              </div>
+            )}
+            {pedido.telefono && (
+              <div className="detalle-meta-item">
+                <span className="detalle-meta-label">📞 Teléfono</span>
+                <span>{pedido.telefono}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Tabla de productos */}
+          <div className="detalle-pedido-tabla">
+            <div className="detalle-tabla-header">
+              <span>Producto</span>
+              <span>Cant.</span>
+              <span>P. Unit.</span>
+              <span>Subtotal</span>
+            </div>
+            {pedido.items.map((item, i) => (
+              <div key={i} className="detalle-tabla-fila">
+                <div className="detalle-producto-info">
+                  {item.producto?.imagen && item.producto.imagen !== 'en proceso' ? (
+                    <img src={item.producto.imagen} alt={item.producto?.nombre} className="detalle-producto-img" />
+                  ) : (
+                    <div className="detalle-producto-img-placeholder">👓</div>
+                  )}
+                  <span className="detalle-producto-nombre">{item.producto?.nombre || 'Producto'}</span>
+                </div>
+                <span className="detalle-td">{item.cantidad}</span>
+                <span className="detalle-td">S/ {Number(item.precioUnit).toLocaleString('es-PE')}</span>
+                <span className="detalle-td detalle-subtotal">S/ {(Number(item.precioUnit) * item.cantidad).toLocaleString('es-PE')}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Total */}
+          <div className="detalle-pedido-total">
+            <span>Total del pedido</span>
+            <span className="detalle-total-valor">S/ {Number(pedido.total).toLocaleString('es-PE')}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function Perfil() {
   const { usuario, token, actualizarPerfil } = useAuth();
   const navigate = useNavigate();
@@ -16,6 +88,7 @@ function Perfil() {
   const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
+  const [pedidoDetalle, setPedidoDetalle] = useState(null);
 
   useEffect(() => {
     if (!usuario) {
@@ -50,7 +123,7 @@ function Perfil() {
     try {
       await actualizarPerfil({ nombre, email, password });
       setMensaje({ tipo: 'exito', texto: '¡Tus datos se actualizaron correctamente!' });
-      setPassword(''); // Limpiamos la contraseña por seguridad
+      setPassword('');
     } catch (error) {
       setMensaje({ tipo: 'error', texto: error.message });
     }
@@ -118,15 +191,20 @@ function Perfil() {
             ) : (
               <div className="historial-lista">
                 {pedidos.map(pedido => (
-                  <div key={pedido.id} className="pedido-item">
+                  <div
+                    key={pedido.id}
+                    className="pedido-item pedido-item-clickable"
+                    onClick={() => setPedidoDetalle(pedido)}
+                    title="Click para ver detalle completo"
+                  >
                     <div className="pedido-header">
                       <span className="pedido-id">Pedido #{pedido.id}</span>
                       <span className={`pedido-estado ${pedido.estado}`}>{pedido.estado}</span>
                     </div>
                     <div className="pedido-detalles">
-                      <p><strong>Fecha:</strong> {new Date(pedido.creadoEn).toLocaleDateString()}</p>
+                      <p><strong>Fecha:</strong> {new Date(pedido.creadoEn).toLocaleDateString('es-PE')}</p>
                       <p><strong>Total:</strong> S/ {Number(pedido.total).toLocaleString('es-PE')}</p>
-                      <p><strong>Enviado a:</strong> {pedido.direccion}, {pedido.ciudad}</p>
+                      {pedido.direccion && <p><strong>Enviado a:</strong> {pedido.direccion}, {pedido.ciudad}</p>}
                     </div>
                     <div className="pedido-productos">
                       {pedido.items.map((item, index) => (
@@ -135,6 +213,7 @@ function Perfil() {
                         </span>
                       ))}
                     </div>
+                    <span className="pedido-ver-detalle">Ver detalle completo →</span>
                   </div>
                 ))}
               </div>
@@ -143,6 +222,13 @@ function Perfil() {
         </div>
       </div>
       <PiePagina />
+
+      {pedidoDetalle && (
+        <ModalDetallePedido
+          pedido={pedidoDetalle}
+          onClose={() => setPedidoDetalle(null)}
+        />
+      )}
     </>
   );
 }

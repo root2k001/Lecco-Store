@@ -16,6 +16,14 @@ const ProductosList = () => {
     })
     const [orden, setOrden] = useState('relevante')
     const [mostrarFiltrosMenu, setMostrarFiltrosMenu] = useState(false)
+
+    // ── Paginación ──────────────────────────────────────────────────────────────
+    const [pagina, setPagina] = useState(1)
+    const [totalPaginas, setTotalPaginas] = useState(1)
+    const [totalProductos, setTotalProductos] = useState(0)
+    const ITEMS_POR_PAGINA = 12
+    // ───────────────────────────────────────────────────────────────────────────
+
     const { agregarAlCarrito } = useCarrito()
     const { toggleFavorito, esFavorito } = useFavoritos()
 
@@ -24,15 +32,15 @@ const ProductosList = () => {
             try {
                 setLoading(true)
                 setError(null)
-                const response = await fetch('/api/productos')
+                const response = await fetch(`/api/productos?page=${pagina}&limit=${ITEMS_POR_PAGINA}`)
 
                 if (!response.ok) {
                     throw new Error('Error al cargar los productos desde el servidor')
                 }
 
                 const data = await response.json()
-                // Mapeamos los datos del backend (español) al formato que tu frontend ya usaba (inglés)
-                const productosMapeados = data.map(p => ({
+                // La API ahora devuelve { productos, total, page, totalPages, limit }
+                const productosMapeados = (data.productos || data).map(p => ({
                     id: p.id,
                     name: p.nombre,
                     price: Number(p.precio),
@@ -42,6 +50,10 @@ const ProductosList = () => {
                     quantity: p.stock
                 }))
                 setProductos(productosMapeados)
+                if (data.totalPages !== undefined) {
+                    setTotalPaginas(data.totalPages)
+                    setTotalProductos(data.total)
+                }
             } catch (err) {
                 setError(err.message || 'Error al cargar los productos')
             } finally {
@@ -50,7 +62,7 @@ const ProductosList = () => {
         }
 
         cargarProductos()
-    }, [])
+    }, [pagina])
 
     const handleImageClick = (producto) => {
         setProductoSeleccionado(producto)
@@ -337,6 +349,42 @@ const ProductosList = () => {
                             })
                         )}
                     </div>
+
+                    {/* ── Controles de Paginación ─────────────────────────────────────────── */}
+                    {totalPaginas > 1 && (
+                        <div className="paginacion-container">
+                            <span className="paginacion-info">
+                                Mostrando {((pagina - 1) * ITEMS_POR_PAGINA) + 1}–{Math.min(pagina * ITEMS_POR_PAGINA, totalProductos)} de {totalProductos} productos
+                            </span>
+                            <div className="paginacion-botones">
+                                <button
+                                    className="paginacion-btn"
+                                    onClick={() => { setPagina(p => p - 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                    disabled={pagina === 1}
+                                >
+                                    ← Anterior
+                                </button>
+                                {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(n => (
+                                    <button
+                                        key={n}
+                                        className={`paginacion-numero ${n === pagina ? 'activo' : ''}`}
+                                        onClick={() => { setPagina(n); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                    >
+                                        {n}
+                                    </button>
+                                ))}
+                                <button
+                                    className="paginacion-btn"
+                                    onClick={() => { setPagina(p => p + 1); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                    disabled={pagina === totalPaginas}
+                                >
+                                    Siguiente →
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    {/* ─────────────────────────────────────────────────────────────────────── */}
+
                 </main>
             </section>
 

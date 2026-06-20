@@ -4,11 +4,24 @@ import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
 
 const router = Router();
 
-// Obtener todos los productos (Público)
+// Obtener todos los productos con paginación (Público)
 router.get('/', async (req, res) => {
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit = Math.min(50, parseInt(req.query.limit) || 12); // máx 50 por página
+  const skip  = (page - 1) * limit;
+
   try {
-    const productos = await prisma.producto.findMany();
-    res.json(productos);
+    const [productos, total] = await Promise.all([
+      prisma.producto.findMany({ skip, take: limit, orderBy: { creadoEn: 'desc' } }),
+      prisma.producto.count()
+    ]);
+    res.json({
+      productos,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      limit
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener los productos' });
