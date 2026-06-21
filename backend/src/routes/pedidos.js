@@ -11,9 +11,10 @@ const crearTransporter = () => {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return null;
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true' || parseInt(process.env.SMTP_PORT) === 465,
+    port: 587,           // Siempre 587 (STARTTLS) — el 465 resuelve a IPv6 en Render
+    secure: false,       // false = STARTTLS, no SSL puro
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    tls: { rejectUnauthorized: false },
     family: 4,
     lookup: (hostname, options, callback) => dns.lookup(hostname, { ...options, family: 4 }, callback)
   });
