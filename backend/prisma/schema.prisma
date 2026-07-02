@@ -19,15 +19,17 @@ model Usuario {
 }
 
 model Producto {
-  id          Int          @id @default(autoincrement())
-  nombre      String
-  precio      Decimal      @db.Decimal(10, 2)
-  imagen      String?
-  genero      String       
-  stock       Int          @default(0)
-  descripcion String?
-  creadoEn    DateTime     @default(now())
-  items       ItemPedido[]
+  id                  Int          @id @default(autoincrement())
+  nombre              String
+  precio              Decimal      @db.Decimal(10, 2)
+  imagen              String?
+  genero              String       
+  stock               Int          @default(0)
+  descripcion         String?
+  imagenesAdicionales String[]     @default([])
+  videos              String[]     @default([])
+  creadoEn            DateTime     @default(now())
+  items               ItemPedido[]
 }
 
 model Pedido {

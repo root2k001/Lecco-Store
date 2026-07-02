@@ -147,23 +147,7 @@ function Inicio() {
         )}
       </section>
 
-      {/* STORYTELLING SECTION */}
-      <section className="historia-section">
-        <div className="historia-content">
-          <div className="historia-texto">
-            <h2>Artesanía y Diseño Premium</h2>
-            <p>
-              En Lecco, creemos que las gafas son más que un accesorio: son una extensión de tu personalidad. 
-              Cada montura está diseñada con atención al detalle y fabricada con materiales de la más alta calidad 
-              para garantizar comodidad y durabilidad sin comprometer el estilo.
-            </p>
-            <Link to="/Nosotros" className="btn-secundario">Conócenos</Link>
-          </div>
-          <div className="historia-imagen">
-            <img src="/historiaLecco.png" alt="Artesanía y Diseño Premium Lecco" className="historia-img-real" />
-          </div>
-        </div>
-      </section>
+
 
       <PiePagina />
     </div>

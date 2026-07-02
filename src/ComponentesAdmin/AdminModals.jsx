@@ -13,7 +13,9 @@ function ProductoModal({ producto, onClose, onSave, token }) {
     stock: producto?.stock ?? 0,
     genero: producto?.genero || 'unisex',
     descripcion: producto?.descripcion || '',
-    imagen: producto?.imagen || ''
+    imagen: producto?.imagen || '',
+    imagenesAdicionales: producto?.imagenesAdicionales || [],
+    videos: producto?.videos || []
   });
 
   const [guardando, setGuardando] = useState(false);
@@ -31,26 +33,30 @@ function ProductoModal({ producto, onClose, onSave, token }) {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- Subir imagen a Cloudinary vía /api/upload ---
-  const subirImagen = async (file) => {
+  // --- Subir archivo a Cloudinary vía /api/upload ---
+  const subirArchivo = async (file) => {
     if (!file) return;
 
     // Validar tipo
-    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    const tiposPermitidos = [
+      'image/jpeg', 'image/png', 'image/webp', 'image/gif',
+      'video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'
+    ];
     if (!tiposPermitidos.includes(file.type)) {
-      setError('Solo se permiten imágenes JPG, PNG, WebP o GIF');
+      setError('Solo se permiten imágenes (JPG, PNG, WebP, GIF) o videos (MP4, WebM, OGG, MOV)');
       return;
     }
 
-    // Validar tamaño (5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      setError('La imagen es demasiado grande. Máximo 5MB.');
+    const isVideo = file.type.startsWith('video/');
+    const maxTamanio = isVideo ? 20 * 1024 * 1024 : 5 * 1024 * 1024; // 20MB para video, 5MB para imagen
+    if (file.size > maxTamanio) {
+      setError(isVideo ? 'El video es demasiado grande. Máximo 20MB.' : 'La imagen es demasiado grande. Máximo 5MB.');
       return;
     }
 
     setSubiendo(true);
     setError('');
-    setProgresoTexto('Subiendo imagen...');
+    setProgresoTexto(isVideo ? 'Subiendo video...' : 'Subiendo imagen...');
 
     try {
       const formData = new FormData();
@@ -66,13 +72,24 @@ function ProductoModal({ producto, onClose, onSave, token }) {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Error al subir la imagen');
+        throw new Error(data.error || 'Error al subir el archivo');
       }
 
       const data = await res.json();
-      setForm(prev => ({ ...prev, imagen: data.url }));
-      setProgresoTexto('¡Imagen subida!');
 
+      setForm(prev => {
+        if (isVideo) {
+          return { ...prev, videos: [...prev.videos, data.url] };
+        } else {
+          if (!prev.imagen) {
+            return { ...prev, imagen: data.url };
+          } else {
+            return { ...prev, imagenesAdicionales: [...prev.imagenesAdicionales, data.url] };
+          }
+        }
+      });
+
+      setProgresoTexto(isVideo ? '¡Video subido!' : '¡Imagen subida!');
       setTimeout(() => setProgresoTexto(''), 2000);
     } catch (err) {
       setError(err.message);
@@ -100,25 +117,26 @@ function ProductoModal({ producto, onClose, onSave, token }) {
     e.stopPropagation();
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActivo(false);
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      subirImagen(files[0]);
+      for (let i = 0; i < files.length; i++) {
+        await subirArchivo(files[i]);
+      }
     }
   };
 
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) subirImagen(file);
-  };
-
-  const eliminarImagen = () => {
-    setForm(prev => ({ ...prev, imagen: '' }));
-    setProgresoTexto('');
+  const handleFileSelect = async (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      for (let i = 0; i < files.length; i++) {
+        await subirArchivo(files[i]);
+      }
+    }
   };
 
   // --- Submit del formulario ---
@@ -149,7 +167,9 @@ function ProductoModal({ producto, onClose, onSave, token }) {
           stock: parseInt(form.stock),
           genero: form.genero,
           descripcion: form.descripcion.trim(),
-          imagen: form.imagen.trim() || null
+          imagen: form.imagen.trim() || null,
+          imagenesAdicionales: form.imagenesAdicionales,
+          videos: form.videos
         })
       });
 
@@ -237,81 +257,157 @@ function ProductoModal({ producto, onClose, onSave, token }) {
 
             {modoUrl ? (
               /* Modo URL manual */
-              <input
-                type="text"
-                name="imagen"
-                value={form.imagen}
-                onChange={handleChange}
-                placeholder="https://ejemplo.com/imagen.jpg"
-              />
+              <div className="manual-urls-container">
+                <div className="manual-url-row">
+                  <label>Imagen Principal (Portada)</label>
+                  <input
+                    type="text"
+                    name="imagen"
+                    value={form.imagen}
+                    onChange={handleChange}
+                    placeholder="https://ejemplo.com/portada.jpg"
+                  />
+                </div>
+                <div className="manual-url-row">
+                  <label>Imágenes Adicionales (separadas por coma)</label>
+                  <textarea
+                    value={form.imagenesAdicionales.join(', ')}
+                    onChange={(e) => {
+                      const urls = e.target.value.split(',').map(u => u.trim()).filter(Boolean);
+                      setForm(prev => ({ ...prev, imagenesAdicionales: urls }));
+                    }}
+                    placeholder="https://ejemplo.com/img1.jpg, https://ejemplo.com/img2.jpg"
+                    rows="2"
+                  />
+                </div>
+                <div className="manual-url-row">
+                  <label>Videos (separados por coma)</label>
+                  <textarea
+                    value={form.videos.join(', ')}
+                    onChange={(e) => {
+                      const urls = e.target.value.split(',').map(u => u.trim()).filter(Boolean);
+                      setForm(prev => ({ ...prev, videos: urls }));
+                    }}
+                    placeholder="https://ejemplo.com/video1.mp4, https://ejemplo.com/video2.mp4"
+                    rows="2"
+                  />
+                </div>
+              </div>
             ) : (
               /* Modo Drag & Drop */
               <>
-                {form.imagen ? (
-                  /* Preview de imagen subida */
-                  <div className="upload-preview">
-                    <img
-                      src={form.imagen}
-                      alt="Preview"
-                      onError={e => {
-                        e.target.onerror = null;
-                        e.target.src = 'https://via.placeholder.com/200x200?text=URL+Inv%C3%A1lida';
-                      }}
-                    />
-                    <button
-                      type="button"
-                      className="upload-preview-remove"
-                      onClick={eliminarImagen}
-                      title="Quitar imagen"
-                    >
-                      <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none">
-                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                      </svg>
-                    </button>
-                    {progresoTexto && (
-                      <span className="upload-success-badge">{progresoTexto}</span>
-                    )}
-                  </div>
-                ) : (
-                  /* Dropzone */
-                  <div
-                    className={`upload-dropzone ${dragActivo ? 'dropzone-active' : ''} ${subiendo ? 'dropzone-uploading' : ''}`}
-                    onDragEnter={handleDragEnter}
-                    onDragLeave={handleDragLeave}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onClick={() => !subiendo && inputFileRef.current?.click()}
-                  >
-                    <input
-                      ref={inputFileRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp,image/gif"
-                      onChange={handleFileSelect}
-                      style={{ display: 'none' }}
-                    />
-
-                    {subiendo ? (
-                      <div className="dropzone-uploading-content">
-                        <div className="upload-spinner" />
-                        <span>{progresoTexto}</span>
+                {(form.imagen || form.imagenesAdicionales.length > 0 || form.videos.length > 0) && (
+                  <div className="media-preview-grid">
+                    {/* Imagen Principal */}
+                    {form.imagen && (
+                      <div className="media-preview-card principal">
+                        <span className="media-badge">Principal</span>
+                        <img src={form.imagen} alt="Portada" />
+                        <button
+                          type="button"
+                          className="media-preview-remove"
+                          onClick={() => {
+                            if (form.imagenesAdicionales.length > 0) {
+                              const nextPrincipal = form.imagenesAdicionales[0];
+                              const rest = form.imagenesAdicionales.slice(1);
+                              setForm(prev => ({
+                                ...prev,
+                                imagen: nextPrincipal,
+                                imagenesAdicionales: rest
+                              }));
+                            } else {
+                              setForm(prev => ({ ...prev, imagen: '' }));
+                            }
+                          }}
+                          title="Eliminar portada"
+                        >
+                          ×
+                        </button>
                       </div>
-                    ) : (
-                      <>
-                        <div className="dropzone-icon">
-                          <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                            <circle cx="8.5" cy="8.5" r="1.5" />
-                            <polyline points="21 15 16 10 5 21" />
-                          </svg>
-                        </div>
-                        <p className="dropzone-text">
-                          Arrastra una imagen aquí o <span>haz clic para seleccionar</span>
-                        </p>
-                        <p className="dropzone-hint">JPG, PNG, WebP o GIF · Máx 5MB</p>
-                      </>
                     )}
+
+                    {/* Imágenes Adicionales */}
+                    {form.imagenesAdicionales.map((imgUrl, index) => (
+                      <div className="media-preview-card" key={`img-add-${index}`}>
+                        <img src={imgUrl} alt={`Adicional ${index + 1}`} />
+                        <button
+                          type="button"
+                          className="media-preview-remove"
+                          onClick={() => {
+                            setForm(prev => ({
+                              ...prev,
+                              imagenesAdicionales: prev.imagenesAdicionales.filter((_, i) => i !== index)
+                            }));
+                          }}
+                          title="Eliminar imagen"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Videos */}
+                    {form.videos.map((videoUrl, index) => (
+                      <div className="media-preview-card video" key={`vid-${index}`}>
+                        <span className="media-badge video">Video</span>
+                        <video src={videoUrl} muted playsInline />
+                        <button
+                          type="button"
+                          className="media-preview-remove"
+                          onClick={() => {
+                            setForm(prev => ({
+                              ...prev,
+                              videos: prev.videos.filter((_, i) => i !== index)
+                            }));
+                          }}
+                          title="Eliminar video"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
+
+                {/* Dropzone */}
+                <div
+                  className={`upload-dropzone ${dragActivo ? 'dropzone-active' : ''} ${subiendo ? 'dropzone-uploading' : ''} ${(form.imagen || form.imagenesAdicionales.length > 0 || form.videos.length > 0) ? 'dropzone-compact' : ''}`}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  onClick={() => !subiendo && inputFileRef.current?.click()}
+                >
+                  <input
+                    ref={inputFileRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/ogg,video/quicktime"
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                    multiple
+                  />
+
+                  {subiendo ? (
+                    <div className="dropzone-uploading-content">
+                      <div className="upload-spinner" />
+                      <span>{progresoTexto}</span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="dropzone-icon">
+                        <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <polyline points="21 15 16 10 5 21" />
+                        </svg>
+                      </div>
+                      <p className="dropzone-text">
+                        Arrastra imágenes/videos aquí o <span>haz clic para seleccionar</span>
+                      </p>
+                      <p className="dropzone-hint">Imágenes de hasta 5MB · Videos de hasta 20MB</p>
+                    </>
+                  )}
+                </div>
               </>
             )}
           </div>

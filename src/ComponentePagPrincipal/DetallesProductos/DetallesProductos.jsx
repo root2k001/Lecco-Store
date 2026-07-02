@@ -21,12 +21,14 @@ const DetalleProducto = ({ producto, onCerrar }) => {
 
     if (!producto) return null
 
-    // Generamos una lista de imágenes simulando variaciones de ángulos de Gentle Monster
-    const imagenesProducto = [
-        producto.img,
-        producto.img, // segunda toma
-        producto.img  // detalle cercano
-    ].filter(img => img && img !== 'en proceso')
+    const imagenesAdicionales = producto.imagenesAdicionales || []
+    const videosProducto = producto.videos || []
+
+    const mediaList = [
+        ...(producto.img && producto.img !== 'en proceso' ? [{ type: 'image', url: producto.img }] : []),
+        ...imagenesAdicionales.map(url => ({ type: 'image', url })),
+        ...videosProducto.map(url => ({ type: 'video', url }))
+    ]
 
     return (
         <div className="modal-overlay" onClick={onCerrar}>
@@ -34,13 +36,28 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                 <button className="modal-cerrar" onClick={onCerrar}>×</button>
                 
                 <div className="detalle-producto-container">
-                    {/* Columna Izquierda: Carrusel de imágenes scrolleable verticalmente */}
+                    {/* Columna Izquierda: Carrusel de imágenes/videos scrolleable verticalmente */}
                     <div className="detalle-imagenes-carrusel">
-                        {imagenesProducto.length > 0 ? (
-                            imagenesProducto.map((imgUrl, index) => (
+                        {mediaList.length > 0 ? (
+                            mediaList.map((item, index) => (
                                 <div className="carrusel-imagen-wrapper" key={index}>
-                                    <img src={imgUrl} alt={`${producto.name} - Vista ${index + 1}`} style={producto.stock <= 0 ? { opacity: 0.6 } : {}} />
-                                    {index === 0 && imagenesProducto.length > 1 && (
+                                    {item.type === 'image' ? (
+                                        <img 
+                                            src={item.url} 
+                                            alt={`${producto.name} - Vista ${index + 1}`} 
+                                            style={producto.stock <= 0 ? { opacity: 0.6 } : {}} 
+                                        />
+                                    ) : (
+                                        <video 
+                                            src={item.url} 
+                                            controls 
+                                            muted 
+                                            loop 
+                                            playsInline 
+                                            style={producto.stock <= 0 ? { opacity: 0.6 } : {}} 
+                                        />
+                                    )}
+                                    {index === 0 && mediaList.length > 1 && (
                                         <div className="scroll-indicador">
                                             <span>Deslizar hacia abajo</span>
                                             <span className="flecha-indicadora">↓</span>

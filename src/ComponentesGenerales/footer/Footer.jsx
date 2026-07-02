@@ -25,9 +25,9 @@ function Footer() {
                 <div className="footer-seccion">
                     <h4>Contacto</h4>
                     <ul className="footer-info">
-                        
-                        <li>📞 +51 966894989</li>
-                        <li>✉️ contacto@lecco.com</li>
+
+                        <li>+51 999 999 999</li>
+                        <li>lecco.eyewear@gmail.com</li>
                     </ul>
                 </div>
 

@@ -47,7 +47,9 @@ const ProductosList = () => {
                     img: p.imagen || 'en proceso',
                     gender: p.genero,
                     stock: p.stock,
-                    quantity: p.stock
+                    quantity: p.stock,
+                    imagenesAdicionales: p.imagenesAdicionales || [],
+                    videos: p.videos || []
                 }))
                 setProductos(productosMapeados)
                 if (data.totalPages !== undefined) {
@@ -115,13 +117,6 @@ const ProductosList = () => {
         return resultado
     }, [filtros, orden, productos])
 
-    // A small list of colors to pick from for swatches to match Gentle Monster visual detail
-    const mockSwatches = [
-        ['#4b3c31', '#7d8c77'],
-        ['#cfb53b', '#2e4a3f'],
-        ['#1c1c1c', '#a8a8a8'],
-        ['#d3a297', '#465c69']
-    ]
 
     if (loading) {
         return (
@@ -270,7 +265,6 @@ const ProductosList = () => {
                             </div>
                         ) : (
                             productosFiltrados.map((producto) => {
-                                const swatches = mockSwatches[producto.id % mockSwatches.length]
                                 return (
                                     <div className='producto-carta' key={producto.id}>
                                         <div className='producto-imagen-wrapper'>
@@ -322,15 +316,7 @@ const ProductosList = () => {
                                                     <h3 className='producto-nombre' onClick={() => handleImageClick(producto)}>{producto.name}</h3>
                                                     <p className='precio'>S/ {producto.price.toLocaleString('es-PE')}</p>
 
-                                                    <div className='producto-swatches'>
-                                                        {swatches.map((color, idx) => (
-                                                            <span
-                                                                key={idx}
-                                                                className='swatch-punto'
-                                                                style={{ backgroundColor: color }}
-                                                            ></span>
-                                                        ))}
-                                                    </div>
+
                                                 </div>
 
                                                 <button

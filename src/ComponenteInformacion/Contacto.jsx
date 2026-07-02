@@ -113,23 +113,7 @@ function Contacto() {
                         ¿Tienes alguna pregunta o comentario? Estamos aquí para ayudarte.
                     </p>
 
-                    <div className="contacto-detalles">
 
-                        <div className="detalle-item">
-                            <span className="detalle-icono">📞</span>
-                            <div>
-                                <h3>#whatsapp</h3>
-                                <p>+51 966 895 989</p>
-                            </div>
-                        </div>
-                        <div className="detalle-item">
-                            <span className="detalle-icono">✉️</span>
-                            <div>
-                                <h3>Correo</h3>
-                                <p>contacto@lecco.com</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <form className="contacto-formulario" onSubmit={handleSubmit}>
@@ -183,7 +167,7 @@ function Contacto() {
                             type="tel"
                             value={formData.telefono}
                             onChange={handleChange}
-                            placeholder="+1 234 567 890"
+                            placeholder="+51 xxx xxx xxx"
                         />
                     </div>
 

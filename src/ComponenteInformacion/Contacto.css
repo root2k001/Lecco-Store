@@ -19,13 +19,23 @@
   }
 }
 
+.contacto-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 .contacto-info h1 {
+
+
   font-size: 2.5rem;
   font-weight: 300;
   text-transform: uppercase;
   letter-spacing: 4px;
   color: #1a1a1a;
   margin-bottom: 16px;
+
 }
 
 .contacto-descripcion {

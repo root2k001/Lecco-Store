@@ -49,10 +49,19 @@ router.get('/:id', async (req, res) => {
 
 // Crear un producto
 router.post('/', verifyToken, verifyAdmin, async (req, res) => {
-  const { nombre, precio, imagen, genero, stock, descripcion } = req.body;
+  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = req.body;
   try {
     const nuevoProducto = await prisma.producto.create({
-      data: { nombre, precio, imagen, genero, stock, descripcion }
+      data: {
+        nombre,
+        precio,
+        imagen,
+        genero,
+        stock,
+        descripcion,
+        imagenesAdicionales: imagenesAdicionales || [],
+        videos: videos || []
+      }
     });
     res.status(201).json(nuevoProducto);
   } catch (error) {
