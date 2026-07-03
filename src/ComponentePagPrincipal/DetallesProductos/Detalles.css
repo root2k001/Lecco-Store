@@ -227,58 +227,6 @@
     letter-spacing: 0.5px;
 }
 
-/* Selector de Color */
-.info-color-seccion {
-    margin-bottom: 2.5rem;
-}
-
-.color-label-seleccionado {
-    display: block;
-    font-size: 0.65rem;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: #aaa;
-    margin-bottom: 12px;
-}
-
-.color-swatches-contenedor {
-    display: flex;
-    gap: 12px;
-}
-
-.color-swatch-circulo {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 1px solid #ebebeb;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    padding: 0;
-    box-sizing: border-box;
-    position: relative;
-}
-
-.color-swatch-circulo:hover {
-    transform: scale(1.1);
-}
-
-.color-swatch-circulo.activo {
-    border: 1px solid #111;
-    transform: scale(1.1);
-}
-
-.color-swatch-circulo.activo::after {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    border: 1px solid #111;
-    border-radius: 50%;
-}
-
 /* Botón Añadir al Carrito */
 .info-btn-carrito {
     width: 100%;

@@ -48,6 +48,7 @@ const ProductosList = () => {
                     gender: p.genero,
                     stock: p.stock,
                     quantity: p.stock,
+                    descripcion: p.descripcion,
                     imagenesAdicionales: p.imagenesAdicionales || [],
                     videos: p.videos || []
                 }))

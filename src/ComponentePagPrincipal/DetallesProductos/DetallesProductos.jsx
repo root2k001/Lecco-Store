@@ -6,18 +6,10 @@ import { useState } from 'react'
 const DetalleProducto = ({ producto, onCerrar }) => {
     const { agregarAlCarrito } = useCarrito()
     const { toggleFavorito, esFavorito } = useFavoritos()
-    
+
     // Estados para controlar los acordeones
     const [envioAbierto, setEnvioAbierto] = useState(false)
     const [detallesAbierto, setDetallesAbierto] = useState(true)
-    
-    // Mocks de colores para el producto
-    const coloresDisponibles = [
-        { id: 'silver', nombre: 'Silver / Clear', hex: '#dcdcdc' },
-        { id: 'gold', nombre: 'Gold / Black', hex: '#c9a962' },
-        { id: 'tortoise', nombre: 'Tortoise / Brown', hex: '#5c4033' }
-    ]
-    const [colorSeleccionado, setColorSeleccionado] = useState(coloresDisponibles[0])
 
     if (!producto) return null
 
@@ -34,7 +26,7 @@ const DetalleProducto = ({ producto, onCerrar }) => {
         <div className="modal-overlay" onClick={onCerrar}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <button className="modal-cerrar" onClick={onCerrar}>×</button>
-                
+
                 <div className="detalle-producto-container">
                     {/* Columna Izquierda: Carrusel de imágenes/videos scrolleable verticalmente */}
                     <div className="detalle-imagenes-carrusel">
@@ -42,19 +34,19 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                             mediaList.map((item, index) => (
                                 <div className="carrusel-imagen-wrapper" key={index}>
                                     {item.type === 'image' ? (
-                                        <img 
-                                            src={item.url} 
-                                            alt={`${producto.name} - Vista ${index + 1}`} 
-                                            style={producto.stock <= 0 ? { opacity: 0.6 } : {}} 
+                                        <img
+                                            src={item.url}
+                                            alt={`${producto.name} - Vista ${index + 1}`}
+                                            style={producto.stock <= 0 ? { opacity: 0.6 } : {}}
                                         />
                                     ) : (
-                                        <video 
-                                            src={item.url} 
-                                            controls 
-                                            muted 
-                                            loop 
-                                            playsInline 
-                                            style={producto.stock <= 0 ? { opacity: 0.6 } : {}} 
+                                        <video
+                                            src={item.url}
+                                            controls
+                                            muted
+                                            loop
+                                            playsInline
+                                            style={producto.stock <= 0 ? { opacity: 0.6 } : {}}
                                         />
                                     )}
                                     {index === 0 && mediaList.length > 1 && (
@@ -69,7 +61,7 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                             <div className="detalle-imagen-placeholder">👓</div>
                         )}
                     </div>
-                    
+
                     {/* Columna Derecha: Panel de Detalles Fijo */}
                     <div className="detalle-info-panel">
                         <div className="info-panel-cabecera">
@@ -84,7 +76,7 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                                 </svg>
                             </button>
                         </div>
-                        
+
                         <p className="info-precio">S/ {producto.price?.toLocaleString('es-PE')}</p>
 
                         <div className="info-stock-status" style={{ margin: '15px 0', fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -96,26 +88,10 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                                 <span style={{ color: '#10b981' }}>🟢 Stock disponible: {producto.stock}</span>
                             )}
                         </div>
-                        
-                        {/* Selector de Color */}
-                        <div className="info-color-seccion">
-                            <span className="color-label-seleccionado">{colorSeleccionado.nombre}</span>
-                            <div className="color-swatches-contenedor">
-                                {coloresDisponibles.map(color => (
-                                    <button
-                                        key={color.id}
-                                        className={`color-swatch-circulo ${colorSeleccionado.id === color.id ? 'activo' : ''}`}
-                                        style={{ backgroundColor: color.hex }}
-                                        onClick={() => setColorSeleccionado(color)}
-                                        title={color.nombre}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                        
+
                         {/* Botón de Añadir al Carrito */}
-                        <button 
-                            className={`info-btn-carrito ${producto.stock <= 0 ? 'agotado' : ''}`} 
+                        <button
+                            className={`info-btn-carrito ${producto.stock <= 0 ? 'agotado' : ''}`}
                             disabled={producto.stock <= 0}
                             style={producto.stock <= 0 ? { backgroundColor: '#cbd5e1', cursor: 'not-allowed', color: '#64748b' } : {}}
                             onClick={() => {
@@ -126,38 +102,36 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                         >
                             {producto.stock <= 0 ? 'Sin Stock' : 'Añadir al Carrito'}
                         </button>
-                        
+
                         {/* Acordeones Desplegables */}
                         <div className="info-acordeones">
                             <div className="acordeon-item">
-                                <button 
-                                    className="acordeon-btn" 
+                                <button
+                                    className="acordeon-btn"
                                     onClick={() => setDetallesAbierto(!detallesAbierto)}
                                 >
-                                    <span>Detalles</span>
+                                    <span>Descripcion</span>
                                     <span>{detallesAbierto ? '—' : '+'}</span>
                                 </button>
                                 <div className={`acordeon-contenido ${detallesAbierto ? 'abierto' : ''}`}>
                                     <p>
-                                        Gafas de sol de la colección permanente de Lecco. Montura de acetato 
-                                        premium fabricada a mano con patillas elegantes y grabados metálicos característicos.
-                                        Protección 100% contra rayos UV.
+                                        {producto.descripcion || "No hay descripción disponible para este producto."}
                                     </p>
                                 </div>
                             </div>
-                            
+
                             <div className="acordeon-item">
-                                <button 
-                                    className="acordeon-btn" 
+                                <button
+                                    className="acordeon-btn"
                                     onClick={() => setEnvioAbierto(!envioAbierto)}
                                 >
-                                    <span>Envío y Devoluciones</span>
+                                    <span>Envío</span>
                                     <span>{envioAbierto ? '—' : '+'}</span>
                                 </button>
                                 <div className={`acordeon-contenido ${envioAbierto ? 'abierto' : ''}`}>
                                     <p>
-                                        Envío express gratuito a todo Perú. Las entregas se realizan entre 2 y 4 días 
-                                        hábiles. Devoluciones autorizadas dentro de los primeros 30 días posteriores a la recepción.
+                                        Envío express gratuito a todo Perú. Las entregas se realizan entre 1 y 4 días
+                                        hábiles.
                                     </p>
                                 </div>
                             </div>
