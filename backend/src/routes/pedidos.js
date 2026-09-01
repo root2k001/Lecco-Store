@@ -5,6 +5,14 @@ import { Resend } from 'resend';
 
 const router = Router();
 
+// Helper para escapar caracteres HTML especiales en emails
+const escapeHtml = (str) => String(str)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
 // Helper Resend — usa API HTTP, no SMTP (funciona sin restricciones en Render)
 const crearResend = () => {
   if (!process.env.RESEND_API_KEY) return null;
@@ -187,7 +195,7 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
               <p style="color: #94a3b8; margin: 4px 0 0; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">Store</p>
             </div>
             <div style="padding: 32px;">
-              <h2 style="color: #1e293b; margin: 0 0 8px; font-size: 20px; font-weight: 600;">Hola, ${clienteNombre} 👋</h2>
+              <h2 style="color: #1e293b; margin: 0 0 8px; font-size: 20px; font-weight: 600;">Hola, ${escapeHtml(clienteNombre)} 👋</h2>
               <p style="color: #475569; margin: 0 0 24px; font-size: 15px; line-height: 1.6;">
                 Te informamos que el estado de tu pedido <strong>#${id}</strong> ha sido actualizado.
               </p>
@@ -208,7 +216,7 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
               </table>
               <div style="background: #f8fafc; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
                 <p style="margin: 0 0 6px; font-size: 13px; color: #64748b;">📍 <strong>Dirección de envío:</strong></p>
-                <p style="margin: 0; color: #334155; font-size: 14px;">${pedidoPrevio.direccion || ''}, ${pedidoPrevio.ciudad || ''}</p>
+                <p style="margin: 0; color: #334155; font-size: 14px;">${escapeHtml(pedidoPrevio.direccion || '')}, ${escapeHtml(pedidoPrevio.ciudad || '')}</p>
               </div>
               <div style="border-top: 2px solid #f1f5f9; padding-top: 16px;">
                 <span style="color: #64748b; font-size: 14px; font-weight: 600; text-transform: uppercase;">Total: </span>

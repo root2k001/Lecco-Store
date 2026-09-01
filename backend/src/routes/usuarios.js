@@ -3,17 +3,50 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import prisma from '../prisma.js';
 import { verifyToken } from '../middlewares/authMiddleware.js';
+import rateLimit from 'express-rate-limit'
+
+
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: "Demasiados intentos de inicio de sesion desde esta IP, intenta de nuevo mas tarde"
+});
+
+const registroLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hora
+  max: 5,
+  message: "Demasiados registros desde esta IP, intenta de nuevo en 1 hora"
+});
 
 const router = Router();
 
 // Registro de usuario
-router.post('/registro', async (req, res) => {
+router.post('/registro', registroLimiter, async (req, res) => {
   const { nombre, email, password } = req.body;
+
+  // 0. Validar y sanear los campos de entrada (C-3)
+  if (!nombre || nombre.trim().length < 2) {
+    return res.status(400).json({ error: 'El nombre debe tener al menos 2 caracteres.' });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email.trim())) {
+    return res.status(400).json({ error: 'El formato del correo electrónico no es válido.' });
+  }
+
+  if (!password || password.length < 8) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
+  }
+
+  // Sanear los valores antes de usarlos
+  const nombreSanitizado = nombre.trim();
+  const emailSanitizado = email.trim().toLowerCase();
 
   try {
     // 1. Verificar si el correo ya existe
     const usuarioExistente = await prisma.usuario.findUnique({
-      where: { email }
+      where: { email: emailSanitizado }
     });
 
     if (usuarioExistente) {
@@ -27,8 +60,8 @@ router.post('/registro', async (req, res) => {
     // 3. Guardar en la base de datos
     const nuevoUsuario = await prisma.usuario.create({
       data: {
-        nombre,
-        email,
+        nombre: nombreSanitizado,
+        email: emailSanitizado,
         password: passwordEncriptada,
       }
     });
@@ -45,7 +78,7 @@ router.post('/registro', async (req, res) => {
 });
 
 // Inicio de sesión (Login)
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -88,8 +121,24 @@ router.put('/perfil', verifyToken, async (req, res) => {
   const { nombre, email, password } = req.body;
   const usuarioId = req.usuario.id; // Extraído del token por verifyToken
 
+  // Validar campos antes de actualizar
+  if (nombre !== undefined && nombre.trim().length < 2) {
+    return res.status(400).json({ error: 'El nombre debe tener al menos 2 caracteres.' });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (email !== undefined && !emailRegex.test(email.trim())) {
+    return res.status(400).json({ error: 'El formato del correo electrónico no es válido.' });
+  }
+
+  if (password !== undefined && password.trim() !== '' && password.length < 8) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
+  }
+
   try {
-    const dataToUpdate = { nombre, email };
+    const dataToUpdate = {};
+    if (nombre !== undefined) dataToUpdate.nombre = nombre.trim();
+    if (email !== undefined) dataToUpdate.email = email.trim().toLowerCase();
 
     // Si el usuario proporcionó una nueva contraseña, la encriptamos
     if (password && password.trim() !== '') {
@@ -114,11 +163,11 @@ router.put('/perfil', verifyToken, async (req, res) => {
 
     res.json({
       message: 'Perfil actualizado exitosamente',
-      usuario: { 
-        id: usuarioActualizado.id, 
-        nombre: usuarioActualizado.nombre, 
-        email: usuarioActualizado.email, 
-        rol: usuarioActualizado.rol 
+      usuario: {
+        id: usuarioActualizado.id,
+        nombre: usuarioActualizado.nombre,
+        email: usuarioActualizado.email,
+        rol: usuarioActualizado.rol
       }
     });
   } catch (error) {

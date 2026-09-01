@@ -2,8 +2,25 @@ import { Router } from 'express';
 import prisma from '../prisma.js';
 import { Resend } from 'resend';
 import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
+import rateLimit from 'express-rate-limit';
+
+const contactoLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 4,
+  message: "Demasiados intentos de contacto desde esta IP, intenta de nuevo mas tarde"
+
+
+})
 
 const router = Router();
+
+// Helper para escapar caracteres HTML especiales en emails
+const escapeHtml = (str) => String(str)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
 
 // Helper para crear el cliente Resend (usa API HTTP, no SMTP — funciona en Render)
 const crearResend = () => {
@@ -39,7 +56,7 @@ router.delete('/:id', verifyToken, verifyAdmin, async (req, res) => {
 });
 
 // Endpoint para recibir formulario de contacto
-router.post('/', async (req, res) => {
+router.post('/', contactoLimiter, async (req, res) => {
   const { nombre, email, telefono, mensaje } = req.body;
 
   // Validaciones básicas
@@ -82,21 +99,21 @@ router.post('/', async (req, res) => {
             <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
               <tr>
                 <td style="padding: 6px 0; font-weight: bold; width: 120px; color: #475569;">Cliente:</td>
-                <td style="padding: 6px 0; color: #1e293b;">${nombre.trim()}</td>
+                <td style="padding: 6px 0; color: #1e293b;">${escapeHtml(nombre.trim())}</td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; font-weight: bold; color: #475569;">Correo:</td>
-                <td style="padding: 6px 0;"><a href="mailto:${email.trim()}" style="color: #111827; text-decoration: none;">${email.trim()}</a></td>
+                <td style="padding: 6px 0;"><a href="mailto:${escapeHtml(email.trim())}" style="color: #111827; text-decoration: none;">${escapeHtml(email.trim())}</a></td>
               </tr>
               <tr>
                 <td style="padding: 6px 0; font-weight: bold; color: #475569;">Teléfono:</td>
-                <td style="padding: 6px 0; color: #1e293b;">${telefono ? telefono.trim() : 'No especificado'}</td>
+                <td style="padding: 6px 0; color: #1e293b;">${telefono ? escapeHtml(telefono.trim()) : 'No especificado'}</td>
               </tr>
             </table>
 
             <div style="background-color: #f8fafc; padding: 18px; border-radius: 6px; margin-top: 20px; border-left: 4px solid #111827;">
               <p style="margin: 0 0 8px 0; font-weight: bold; color: #475569; font-size: 14px;">Mensaje:</p>
-              <p style="margin: 0; color: #334155; line-height: 1.6; white-space: pre-wrap;">${mensaje.trim()}</p>
+              <p style="margin: 0; color: #334155; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(mensaje.trim())}</p>
             </div>
 
             <p style="font-size: 11px; color: #94a3b8; margin-top: 30px; border-top: 1px solid #f1f5f9; padding-top: 15px; text-align: center;">

@@ -6,9 +6,9 @@ const router = Router();
 
 // Obtener todos los productos con paginación (Público)
 router.get('/', async (req, res) => {
-  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(50, parseInt(req.query.limit) || 12); // máx 50 por página
-  const skip  = (page - 1) * limit;
+  const skip = (page - 1) * limit;
 
   try {
     const [productos, total] = await Promise.all([
@@ -73,8 +73,19 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
 // Actualizar un producto (ej. para cambiar el stock o precio)
 router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   const { id } = req.params;
-  const data = req.body; // Puede incluir { stock: 10, precio: 120 }
-  
+
+  // Whitelist: solo estos campos pueden ser modificados
+  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = req.body;
+  const data = {};
+  if (nombre !== undefined) data.nombre = nombre;
+  if (precio !== undefined) data.precio = precio;
+  if (imagen !== undefined) data.imagen = imagen;
+  if (genero !== undefined) data.genero = genero;
+  if (stock !== undefined) data.stock = stock;
+  if (descripcion !== undefined) data.descripcion = descripcion;
+  if (imagenesAdicionales !== undefined) data.imagenesAdicionales = imagenesAdicionales;
+  if (videos !== undefined) data.videos = videos;
+
   try {
     const productoPrevio = await prisma.producto.findUnique({
       where: { id: parseInt(id) }
