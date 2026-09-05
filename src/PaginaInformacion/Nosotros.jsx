@@ -1,5 +1,5 @@
-import Cabecera from "../ComponentesGenerales/cabecera/cabecera";
-import PiePagina from '../ComponentesGenerales/footer/Footer.jsx';
+import Cabecera from "../Compartidos/cabecera/cabecera";
+import PiePagina from '../Compartidos/footer/Footer.jsx';
 import './Nosotros.css'
 
 function Nosotros() {

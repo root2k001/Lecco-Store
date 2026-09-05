@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import Cabecera from '../ComponentesGenerales/cabecera/cabecera';
-import PiePagina from '../ComponentesGenerales/footer/Footer';
+import Cabecera from '../Compartidos/cabecera/cabecera';
+import PiePagina from '../Compartidos/footer/Footer';
 import './Perfil.css';
 
 // Modal de detalle de pedido

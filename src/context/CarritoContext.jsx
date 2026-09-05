@@ -8,30 +8,38 @@ export const useCarrito = () => useContext(CarritoContext)
 export function CarritoProvider({ children }) {
     const { addToast } = useToast()
 
+    // revisa  si hay compras  previas  guardadas  en el localstorage del navegador
     const [carrito, setCarrito] = useState(() => {
         const guardando = localStorage.getItem('carrito-lecco')
         return guardando ? JSON.parse(guardando) : []
     })
-
+    // cada vez que  cambia  el carrito  se  actualiza el  localstorage
     useEffect(() => {
         localStorage.setItem('carrito-lecco', JSON.stringify(carrito))
     }, [carrito])
+
+
 
     const agregarAlCarrito = (producto) => {
         let added = false;
         let noStock = false;
 
+
+        //funcion que setea el nuevo estado del carrito
         setCarrito(prev => {
+
+            //constante  de validacion para  revisar si el  producto  ya  esta en el  carrito
             const existenteProducto = prev.find(p => p.id === producto.id)
+            //constante  de stock que revisa  si el  producto  tiene stock o cantidad disponible
             const maxStock = producto.stock !== undefined ? producto.stock : (producto.quantity !== undefined ? producto.quantity : Infinity)
-            
+
             if (existenteProducto) {
                 if (existenteProducto.quantity >= maxStock) {
                     noStock = true;
                     return prev
                 }
                 added = true;
-                return prev.map(p => 
+                return prev.map(p =>
                     p.id === producto.id ? { ...p, quantity: p.quantity + 1 } : p
                 )
             }
@@ -58,7 +66,7 @@ export function CarritoProvider({ children }) {
     }
 
     const incrementarCantidad = (id) => {
-        setCarrito(prev => 
+        setCarrito(prev =>
             prev.map(p => {
                 if (p.id === id) {
                     const maxStock = p.stock !== undefined ? p.stock : Infinity
@@ -73,7 +81,7 @@ export function CarritoProvider({ children }) {
     }
 
     const decrementarCantidad = (id) => {
-        setCarrito(prev => 
+        setCarrito(prev =>
             prev.map(p => {
                 if (p.id === id) {
                     if (p.quantity > 1) {
@@ -89,9 +97,9 @@ export function CarritoProvider({ children }) {
         setCarrito([])
     }
 
-    const valorCarrito = { 
-        carrito, 
-        agregarAlCarrito, 
+    const valorCarrito = {
+        carrito,
+        agregarAlCarrito,
         eliminarDelCarrito,
         incrementarCantidad,
         decrementarCantidad,
@@ -99,7 +107,7 @@ export function CarritoProvider({ children }) {
     }
 
     return (
-        <CarritoContext.Provider value={valorCarrito}> 
+        <CarritoContext.Provider value={valorCarrito}>
             {children}
         </CarritoContext.Provider>
     )

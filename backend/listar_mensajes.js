@@ -9,7 +9,7 @@ async function main() {
     });
 
     console.log('\n==================================================');
-    console.log(`📬 MENSAJES DE CONTACTO EN LA BASE DE DATOS (${mensajes.length})`);
+    console.log(` MENSAJES DE CONTACTO EN LA BASE DE DATOS (${mensajes.length})`);
     console.log('==================================================\n');
 
     if (mensajes.length === 0) {

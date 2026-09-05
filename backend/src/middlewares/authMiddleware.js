@@ -34,3 +34,23 @@ export const verifyAdmin = (req, res, next) => {
 
   next();
 };
+
+// Middleware OPCIONAL: intenta leer el token pero no bloquea si no existe (para checkout de invitados)
+export const optionalToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  req.usuario = null; // Por defecto: invitado (sin usuario)
+
+  if (!authHeader) return next(); // Sin token: continuar como invitado
+
+  const token = authHeader.split(' ')[1];
+  if (!token) return next();
+
+  try {
+    req.usuario = jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    // Token inválido o expirado: continuar como invitado igualmente
+    req.usuario = null;
+  }
+
+  next();
+};

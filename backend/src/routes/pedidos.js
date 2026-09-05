@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import prisma from '../prisma.js';
-import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
+import { verifyToken, verifyAdmin, optionalToken } from '../middlewares/authMiddleware.js';
 import { Resend } from 'resend';
 
 const router = Router();
@@ -27,60 +27,68 @@ const estadoLabels = {
   entregado:   { label: 'Entregado ✅', color: '#059669', bg: '#d1fae5' }
 };
 
-// Crear un nuevo pedido (Ruta protegida)
-router.post('/', verifyToken, async (req, res) => {
-  const usuarioId = req.usuario.id;
-  const { items, total, direccion, ciudad, codigoPostal, telefono } = req.body;
-  // 'items' debe ser un arreglo que llegue del Frontend como: [{ productoId: 1, cantidad: 2, precio: 150 }]
+// Crear un nuevo pedido (Opción A: acepta invitados sin cuenta)
+router.post('/', optionalToken, async (req, res) => {
+  // Si el usuario está logueado, tendrá su ID. Si es invitado, será null.
+  const usuarioId = req.usuario ? req.usuario.id : null;
+  const { items, direccion, ciudad, codigoPostal, telefono } = req.body;
+  // 'items' debe ser un arreglo: [{ productoId: 1, cantidad: 2 }]
+  // El precio y total se calculan desde la base de datos (NUNCA del frontend)
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'El pedido debe contener al menos un producto.' });
+  }
 
   try {
-    // 1. Verificar stock disponible para todos los productos antes de crear el pedido
-    for (const item of items) {
-      const producto = await prisma.producto.findUnique({
-        where: { id: item.productoId }
-      });
-      if (!producto) {
-        return res.status(404).json({ error: `Producto con ID #${item.productoId} no encontrado.` });
-      }
-      if (producto.stock < item.cantidad) {
-        return res.status(400).json({ error: `Stock insuficiente para "${producto.nombre}". Stock disponible: ${producto.stock}.` });
-      }
-    }
-
-    // 2. Realizar la compra y descontar stock en una transacción
+    // Todo dentro de una transacción para evitar race conditions (TOCTOU)
     const nuevoPedido = await prisma.$transaction(async (tx) => {
+      let totalCalculado = 0;
+      const itemsParaCrear = [];
+
+      for (const item of items) {
+        // 1. Obtener el producto con su precio REAL desde la BD
+        const producto = await tx.producto.findUnique({
+          where: { id: item.productoId }
+        });
+
+        if (!producto) {
+          throw new Error(`VALIDATION:Producto con ID #${item.productoId} no encontrado.`);
+        }
+
+        // 2. Verificar stock DENTRO de la transacción (elimina race condition)
+        if (producto.stock < item.cantidad) {
+          throw new Error(`VALIDATION:Stock insuficiente para "${producto.nombre}". Stock disponible: ${producto.stock}.`);
+        }
+
+        // 3. Usar el precio de la BD, NUNCA el del frontend (previene price tampering)
+        itemsParaCrear.push({
+          productoId: producto.id,
+          cantidad: item.cantidad,
+          precioUnit: producto.precio
+        });
+
+        totalCalculado += producto.precio * item.cantidad;
+
+        // 4. Decrementar stock atómicamente dentro de la transacción
+        await tx.producto.update({
+          where: { id: producto.id },
+          data: { stock: { decrement: item.cantidad } }
+        });
+      }
+
+      // 5. Crear el pedido con el total calculado por el servidor
       const pedido = await tx.pedido.create({
         data: {
           usuarioId,
-          total,
+          total: totalCalculado,
           direccion,
           ciudad,
           codigoPostal,
           telefono,
-          items: {
-            create: items.map(item => ({
-              productoId: item.productoId,
-              cantidad: item.cantidad,
-              precioUnit: item.precio
-            }))
-          }
+          items: { create: itemsParaCrear }
         },
-        include: {
-          items: true
-        }
+        include: { items: true }
       });
-
-      // Descontar stock para cada producto
-      for (const item of items) {
-        await tx.producto.update({
-          where: { id: item.productoId },
-          data: {
-            stock: {
-              decrement: item.cantidad
-            }
-          }
-        });
-      }
 
       return pedido;
     });
@@ -88,6 +96,12 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(201).json({ message: 'Pedido procesado exitosamente', pedido: nuevoPedido });
   } catch (error) {
     console.error('Error creando pedido:', error);
+
+    // Errores de validación de negocio (lanzados con throw new Error('VALIDATION:...'))
+    if (error.message?.startsWith('VALIDATION:')) {
+      return res.status(400).json({ error: error.message.replace('VALIDATION:', '') });
+    }
+
     res.status(500).json({ error: 'Hubo un error al procesar el pedido' });
   }
 });

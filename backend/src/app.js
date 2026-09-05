@@ -35,4 +35,14 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Lecco API funcionando' });
 });
 
+// Middleware global de errores
+app.use((err, req, res, next) => {
+  console.error('Error no manejado:', err);
+  res.status(err.status || 500).json({
+    error: process.env.NODE_ENV === 'production' 
+      ? 'Error interno del servidor' 
+      : err.message
+  });
+});
+
 export default app;

@@ -1,8 +1,8 @@
 
 
-import Cabecera from '../ComponentesGenerales/cabecera/cabecera.jsx';
+import Cabecera from '../Compartidos/cabecera/cabecera.jsx';
 import Productos from './ListaProductos/Productos';
-import PiePagina from '../ComponentesGenerales/footer/Footer.jsx';
+import PiePagina from '../Compartidos/footer/Footer.jsx';
 
 function Principal(){
 

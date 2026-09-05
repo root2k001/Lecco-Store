@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import Cabecera from '../ComponentesGenerales/cabecera/cabecera'
+import Cabecera from '../Compartidos/cabecera/cabecera'
 import './NotFound.css'
 
 function NotFound() {

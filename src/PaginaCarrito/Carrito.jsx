@@ -3,16 +3,16 @@ import { Link } from 'react-router-dom'
 import './Carrito.css'
 import { useCarrito } from '../context/CarritoContext'
 import { useAuth } from '../context/AuthContext'
-import AuthModal from '../ComponentesGenerales/AuthModal/AuthModal'
+import AuthModal from '../Compartidos/AuthModal/AuthModal'
 
 function Carrito() {
     const { carrito, eliminarDelCarrito, incrementarCantidad, decrementarCantidad, vaciarCarrito } = useCarrito()
     const { usuario, token } = useAuth()
-    
+
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [compraExitosa, setCompraExitosa] = useState(false)
     const [procesando, setProcesando] = useState(false)
-    
+
     // Nuevo estado para el formulario de envío
     const [mostrarEnvio, setMostrarEnvio] = useState(false)
     const [envioDatos, setEnvioDatos] = useState({
@@ -26,31 +26,29 @@ function Carrito() {
     const cantidadTotal = carrito.reduce((acc, item) => acc + item.quantity, 0)
 
     const handleProcederPago = () => {
-        if (!usuario) {
-            setShowAuthModal(true)
-        } else {
-            setMostrarEnvio(true)
-        }
+        // Opción A: cualquier visitante puede proceder al pago sin registrarse
+        setMostrarEnvio(true)
     }
 
     const procesarPedido = async (e) => {
-        if(e) e.preventDefault();
+        if (e) e.preventDefault();
 
         try {
             setProcesando(true)
-            
+
             const items = carrito.map(item => ({
                 productoId: item.id,
                 cantidad: item.quantity,
                 precio: item.price
             }))
 
+            // Construir cabeceras: solo se incluye Authorization si hay token (usuario logueado)
+            const headers = { 'Content-Type': 'application/json' }
+            if (token) headers['Authorization'] = `Bearer ${token}`
+
             const response = await fetch('/api/pedidos', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
+                headers,
                 body: JSON.stringify({
                     total: total,
                     items: items,
@@ -81,10 +79,10 @@ function Carrito() {
             <div className="carrito-page">
                 <div className="carrito-vacio" style={{ marginTop: '50px' }}>
                     <span className="carrito-vacio-icono">🎉</span>
-                    <h2>¡Gracias por tu compra, {usuario?.nombre}!</h2>
+                    <h2>¡Gracias por tu compra{usuario?.nombre ? `, ${usuario.nombre}` : ''}!</h2>
                     <p>Tu pedido ha sido registrado exitosamente y será enviado a:</p>
                     <p><strong>{envioDatos.direccion}, {envioDatos.ciudad}</strong></p>
-                    <br/>
+                    <br />
                     <Link to="/Coleccion" className="btn-seguir-comprando" onClick={() => setCompraExitosa(false)}>
                         Volver a la tienda
                     </Link>
@@ -96,7 +94,7 @@ function Carrito() {
     return (
         <div className="carrito-page">
             <h1>Tu Carrito de Compras</h1>
-            
+
             {carrito.length === 0 ? (
                 <div className="carrito-vacio">
                     <span className="carrito-vacio-icono">🛒</span>
@@ -130,7 +128,7 @@ function Carrito() {
                                         <span className="carrito-item-precio-unitario">S/ {item.price.toLocaleString('es-PE')} c/u</span>
                                     </div>
                                     <div className="carrito-item-cantidad-control">
-                                        <button 
+                                        <button
                                             className="btn-cantidad"
                                             onClick={() => decrementarCantidad(item.id)}
                                             disabled={item.quantity <= 1}
@@ -138,7 +136,7 @@ function Carrito() {
                                             −
                                         </button>
                                         <span className="cantidad-numero">{item.quantity}</span>
-                                        <button 
+                                        <button
                                             className="btn-cantidad"
                                             onClick={() => incrementarCantidad(item.id)}
                                             disabled={item.quantity >= (item.stock !== undefined ? item.stock : Infinity)}
@@ -150,7 +148,7 @@ function Carrito() {
                                     </div>
                                     <div className="carrito-item-acciones">
                                         <span className="carrito-item-precio">S/ {(item.price * item.quantity).toLocaleString('es-PE')}</span>
-                                        <button 
+                                        <button
                                             className="carrito-item-eliminar"
                                             onClick={() => eliminarDelCarrito(item.id)}
                                         >
@@ -179,8 +177,8 @@ function Carrito() {
 
                         {!mostrarEnvio ? (
                             <>
-                                <button 
-                                    className="btn-checkout" 
+                                <button
+                                    className="btn-checkout"
                                     onClick={handleProcederPago}
                                 >
                                     Proceder al Pago
@@ -192,22 +190,22 @@ function Carrito() {
                         ) : (
                             <form className="envio-form" onSubmit={procesarPedido}>
                                 <h3>Datos de Envío</h3>
-                                <input 
-                                    required type="text" placeholder="Dirección completa" 
-                                    value={envioDatos.direccion} onChange={e => setEnvioDatos({...envioDatos, direccion: e.target.value})} 
+                                <input
+                                    required type="text" placeholder="Dirección completa"
+                                    value={envioDatos.direccion} onChange={e => setEnvioDatos({ ...envioDatos, direccion: e.target.value })}
                                 />
-                                <input 
-                                    required type="text" placeholder="Ciudad" 
-                                    value={envioDatos.ciudad} onChange={e => setEnvioDatos({...envioDatos, ciudad: e.target.value})} 
+                                <input
+                                    required type="text" placeholder="Ciudad"
+                                    value={envioDatos.ciudad} onChange={e => setEnvioDatos({ ...envioDatos, ciudad: e.target.value })}
                                 />
                                 <div className="envio-row">
-                                    <input 
-                                        required type="text" placeholder="C.P." 
-                                        value={envioDatos.codigoPostal} onChange={e => setEnvioDatos({...envioDatos, codigoPostal: e.target.value})} 
+                                    <input
+                                        required type="text" placeholder="C.P."
+                                        value={envioDatos.codigoPostal} onChange={e => setEnvioDatos({ ...envioDatos, codigoPostal: e.target.value })}
                                     />
-                                    <input 
-                                        required type="text" placeholder="Teléfono" 
-                                        value={envioDatos.telefono} onChange={e => setEnvioDatos({...envioDatos, telefono: e.target.value})} 
+                                    <input
+                                        required type="text" placeholder="Teléfono"
+                                        value={envioDatos.telefono} onChange={e => setEnvioDatos({ ...envioDatos, telefono: e.target.value })}
                                     />
                                 </div>
                                 <div className="envio-botones">
@@ -223,13 +221,13 @@ function Carrito() {
             )}
 
             {showAuthModal && (
-                <AuthModal 
-                    onClose={() => setShowAuthModal(false)} 
+                <AuthModal
+                    onClose={() => setShowAuthModal(false)}
                     onSuccess={() => {
                         setShowAuthModal(false)
                         // Al iniciar sesión, se le abrirá el formulario de envío automáticamente
                         setMostrarEnvio(true)
-                    }} 
+                    }}
                 />
             )}
         </div>

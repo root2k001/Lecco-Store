@@ -1,5 +1,5 @@
 import { useState } from 'react'  // uso de estados 
-import Cabecera from "../ComponentesGenerales/cabecera/cabecera"
+import Cabecera from "../Compartidos/cabecera/cabecera"
 import './Contacto.css'
 
 function Contacto() {
