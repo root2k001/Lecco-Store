@@ -54,9 +54,9 @@ export function CarritoProvider({ children }) {
         });
 
         if (added) {
-            addToast(`"${producto.nombre}" añadido al carrito`, 'success');
+            addToast('Producto añadido al carrito', 'success');
         } else if (noStock) {
-            addToast(`No hay más stock disponible de "${producto.nombre}"`, 'error');
+            addToast('No hay más stock disponible', 'error');
         }
     }
 

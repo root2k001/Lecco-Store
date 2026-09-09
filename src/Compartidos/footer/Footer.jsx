@@ -35,7 +35,7 @@ function Footer() {
                     <h4>Síguenos</h4>
                     <div className="footer-social">
                         <a href="#" className="social-link">Facebook</a>
-                        <a href="#" className="social-link">Instagram</a>
+                        <a href="https://www.instagram.com/lecco.eyewear" className="social-link">Instagram</a>
                         <a href="#" className="social-link">Twitter</a>
                     </div>
                 </div>

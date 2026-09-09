@@ -154,7 +154,7 @@ router.get('/admin/todos', verifyToken, verifyAdmin, async (req, res) => {
 // Actualizar el estado de un pedido (ej. pendiente -> enviado)
 router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body;
+  const { estado, motivo } = req.body;
 
   try {
     const pedidoPrevio = await prisma.pedido.findUnique({
@@ -169,17 +169,56 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Pedido no encontrado' });
     }
 
-    const pedidoActualizado = await prisma.pedido.update({
-      where: { id: parseInt(id) },
-      data: { estado }
-    });
+    const transacciones = [];
+
+    // Manejar el stock si cambia el estado respecto a "cancelado"
+    if (pedidoPrevio.estado !== 'cancelado' && estado === 'cancelado') {
+      // Se cancela: regresar el stock
+      for (const item of pedidoPrevio.items) {
+        transacciones.push(
+          prisma.producto.update({
+            where: { id: item.productoId },
+            data: { stock: { increment: item.cantidad } }
+          })
+        );
+      }
+    } else if (pedidoPrevio.estado === 'cancelado' && estado !== 'cancelado') {
+      // Se "descancela": volver a descontar el stock
+      for (const item of pedidoPrevio.items) {
+        transacciones.push(
+          prisma.producto.update({
+            where: { id: item.productoId },
+            data: { stock: { decrement: item.cantidad } }
+          })
+        );
+      }
+    }
+
+    // Actualizar el pedido
+    transacciones.push(
+      prisma.pedido.update({
+        where: { id: parseInt(id) },
+        data: { estado }
+      })
+    );
+
+    // Ejecutar todas las transacciones atómicamente
+    await prisma.$transaction(transacciones);
+    
+    // Obtenemos el pedido actualizado de la bd o asumimos sus valores previos para continuar
+    const pedidoActualizado = { ...pedidoPrevio, estado };
+    // Preparar el detalle del historial
+    let detalleHistorial = `Pedido #${id} del cliente "${pedidoPrevio.usuario?.nombre || 'Invitado'}": estado modificado de "${pedidoPrevio.estado}" a "${estado}".`;
+    if (estado === 'cancelado' && motivo) {
+      detalleHistorial += ` Motivo: ${motivo}`;
+    }
 
     // Registrar en el historial
     await prisma.historialCambios.create({
       data: {
         adminId: req.usuario.id,
-        accion: 'Cambio de Estado de Pedido',
-        detalle: `Pedido #${id} del cliente "${pedidoPrevio.usuario?.nombre || 'Desconocido'}": estado modificado de "${pedidoPrevio.estado}" a "${estado}".`
+        accion: estado === 'cancelado' ? 'Cancelación de Pedido' : 'Cambio de Estado de Pedido',
+        detalle: detalleHistorial
       }
     });
 

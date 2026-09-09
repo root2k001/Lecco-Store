@@ -30,6 +30,34 @@ function Carrito() {
         setMostrarEnvio(true)
     }
 
+    // ─── Constante con tu número de WhatsApp (código país Perú + número) ────────
+    const WHATSAPP_NUMERO = '51966894989'
+
+    // Construye el mensaje de WhatsApp con todos los detalles del pedido
+    const generarMensajeWhatsApp = (numeroPedido) => {
+        const lineasProductos = carrito
+            .map(item => `  • ${item.name} x${item.quantity} — S/ ${(item.price * item.quantity).toLocaleString('es-PE')}`)
+            .join('\n')
+
+        return [
+            ` NUEVO PEDIDO `,
+            ` Pedido #${numeroPedido}`,
+            ``,
+            `*Datos de Entrega:*`,
+            ` Dirección: ${envioDatos.direccion}`,
+            ` Ciudad: ${envioDatos.ciudad}`,
+            ` C.P.: ${envioDatos.codigoPostal}`,
+            ` Teléfono: ${envioDatos.telefono}`,
+            ``,
+            ` *Productos:*`,
+            lineasProductos,
+            ``,
+            ` Total: S/ ${total.toLocaleString('es-PE')}`,
+            ``,
+            `Por favor confirmar disponibilidad y coordinar pago. `
+        ].join('\n')
+    }
+
     const procesarPedido = async (e) => {
         if (e) e.preventDefault();
 
@@ -46,6 +74,7 @@ function Carrito() {
             const headers = { 'Content-Type': 'application/json' }
             if (token) headers['Authorization'] = `Bearer ${token}`
 
+            // 1. Guardar el pedido en el backend con estado "pendiente"
             const response = await fetch('/api/pedidos', {
                 method: 'POST',
                 headers,
@@ -63,6 +92,15 @@ function Carrito() {
                 throw new Error('Error al procesar el pedido en el servidor')
             }
 
+            const data = await response.json()
+            const numeroPedido = data.pedido?.id || '—'
+
+            // 2. Abrir WhatsApp con el resumen del pedido
+            const mensaje = generarMensajeWhatsApp(numeroPedido)
+            const urlWhatsApp = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensaje)}`
+            window.open(urlWhatsApp, '_blank', 'noopener,noreferrer')
+
+            // 3. Mostrar pantalla de éxito y vaciar carrito
             vaciarCarrito()
             setCompraExitosa(true)
             setMostrarEnvio(false)
@@ -74,14 +112,16 @@ function Carrito() {
         }
     }
 
+
     if (compraExitosa) {
         return (
             <div className="carrito-page">
                 <div className="carrito-vacio" style={{ marginTop: '50px' }}>
-                    <span className="carrito-vacio-icono">🎉</span>
-                    <h2>¡Gracias por tu compra{usuario?.nombre ? `, ${usuario.nombre}` : ''}!</h2>
+
+                    <h2>¡Gracias la confianza {usuario?.nombre ? `, ${usuario.nombre}` : ''}  !</h2>
                     <p>Tu pedido ha sido registrado exitosamente y será enviado a:</p>
                     <p><strong>{envioDatos.direccion}, {envioDatos.ciudad}</strong></p>
+                    <p>se estara concretando la compra por whatsApp en un momento </p>
                     <br />
                     <Link to="/Coleccion" className="btn-seguir-comprando" onClick={() => setCompraExitosa(false)}>
                         Volver a la tienda

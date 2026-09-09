@@ -41,17 +41,17 @@ function Nosotros() {
                     <h2>Nuestros Valores</h2>
                     <div className="valores-grid">
                         <div className="valor-card">
-                            <span className="valor-icono">✨</span>
+
                             <h3>Calidad</h3>
                             <p>Materiales premium y acabados impecables en cada producto.</p>
                         </div>
                         <div className="valor-card">
-                            <span className="valor-icono">💡</span>
+
                             <h3>Innovación</h3>
                             <p>Diseños modernos que se adaptan a las tendencias actuales.</p>
                         </div>
                         <div className="valor-card">
-                            <span className="valor-icono">🤝</span>
+
                             <h3>Confianza</h3>
                             <p>Transparencia y honestidad en cada interacción.</p>
                         </div>

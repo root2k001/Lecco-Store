@@ -79,15 +79,7 @@ const DetalleProducto = ({ producto, onCerrar }) => {
 
                         <p className="info-precio">S/ {producto.price?.toLocaleString('es-PE')}</p>
 
-                        <div className="info-stock-status" style={{ margin: '15px 0', fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                            {producto.stock <= 0 ? (
-                                <span style={{ color: '#ef4444' }}>🔴 Sin Stock</span>
-                            ) : producto.stock <= 3 ? (
-                                <span style={{ color: '#f59e0b' }}>⚠️ ¡Pocas unidades! (Quedan {producto.stock})</span>
-                            ) : (
-                                <span style={{ color: '#10b981' }}>🟢 Stock disponible: {producto.stock}</span>
-                            )}
-                        </div>
+
 
                         {/* Botón de Añadir al Carrito */}
                         <button
