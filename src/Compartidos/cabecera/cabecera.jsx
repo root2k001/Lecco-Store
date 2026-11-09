@@ -23,12 +23,6 @@ function Cabecera() {
 
     return (
         <section className="header">
-            <Link to="/" className="logo">Lecco</Link>
-
-            <button className="menu-hamburguesa" onClick={toggleMenuMobile}>
-                {menuMobileAbierto ? '✕' : '☰'}
-            </button>
-
             <nav className={`navigation ${menuMobileAbierto ? 'nav-abierto' : ''}`}>
                 <ul>
                     <li>
@@ -43,29 +37,43 @@ function Cabecera() {
                     <li>
                         <Link to="/Contacto" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Contacto</Link>
                     </li>
+                </ul>
+            </nav>
+
+            <Link to="/" className="logo">Lecco</Link>
+
+            <nav>
+                <ul>
                     {!usuario ? (
                         <li>
-                            <button 
-                                className="carrito-icono" 
-                                style={{ marginRight: '15px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '24px' }} 
+                            <button
+                                className="cabecera-iconos"
+                                style={{ marginRight: '15px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#111', display: 'flex', alignItems: 'center' }}
                                 onClick={() => { setShowAuthModal(true); setMenuMobileAbierto(false); }}
                                 title="Iniciar Sesión"
                             >
-                                👤
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="8" r="4" />
+                                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                                </svg>
                             </button>
                         </li>
                     ) : (
                         <li className="usuario-nav">
                             {usuario.rol === 'admin' && (
-                                <Link to="/admin" className="menu-link" style={{color: '#3b82f6', fontWeight: 'bold'}} onClick={() => setMenuMobileAbierto(false)}>Panel Admin</Link>
+                                <Link to="/admin" className="menu-link" style={{ color: '#3b82f6', fontWeight: 'bold' }} onClick={() => setMenuMobileAbierto(false)}>Panel Admin</Link>
                             )}
-                            <Link to="/perfil" className="usuario-nombre" style={{textDecoration: 'none'}} title="Ir a Mi Perfil" onClick={() => setMenuMobileAbierto(false)}>Hola, {usuario.nombre}</Link>
+                            <Link to="/perfil" className="usuario-nombre" style={{ textDecoration: 'none' }} title="Ir a Mi Perfil" onClick={() => setMenuMobileAbierto(false)}>Hola, {usuario.nombre}</Link>
                             <button className="btn-logout" onClick={() => { logout(); setMenuMobileAbierto(false); }}>Cerrar Sesión</button>
                         </li>
                     )}
                     <li className="carrito-container">
-                        <button className="carrito-icono" onClick={() => { toggleModal(); setMenuMobileAbierto(false); }}>
-                            🛒
+                        <button className="cabecera-iconos" onClick={() => { toggleModal(); setMenuMobileAbierto(false); }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <path d="M16 10a4 4 0 0 1-8 0" />
+                            </svg>
                         </button>
                         {cantidadTotal > 0 && (
                             <span className="contador-productos">{cantidadTotal}</span>
@@ -73,6 +81,10 @@ function Cabecera() {
                     </li>
                 </ul>
             </nav>
+
+            <button className="menu-hamburguesa" onClick={toggleMenuMobile}>
+                {menuMobileAbierto ? '✕' : '☰'}
+            </button>
 
             {mostrarModal && (
                 <div className="carrito-modal-overlay" onClick={toggleModal}>
@@ -99,16 +111,16 @@ function Cabecera() {
                                                 <div className="carrito-item-info">
                                                     <span className="carrito-item-nombre">{item.name}</span>
                                                     <div className="carrito-item-cantidad-selector">
-                                                        <button 
-                                                            className="btn-cantidad" 
+                                                        <button
+                                                            className="btn-cantidad"
                                                             onClick={() => decrementarCantidad(item.id)}
                                                             title="Disminuir cantidad"
                                                         >
                                                             -
                                                         </button>
                                                         <span className="cantidad-numero">{item.quantity}</span>
-                                                        <button 
-                                                            className="btn-cantidad" 
+                                                        <button
+                                                            className="btn-cantidad"
                                                             onClick={() => incrementarCantidad(item.id)}
                                                             title={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? "Límite de stock alcanzado" : "Aumentar cantidad"}
                                                             disabled={item.quantity >= (item.stock !== undefined ? item.stock : Infinity)}
@@ -121,7 +133,7 @@ function Cabecera() {
                                             </div>
                                             <div className="carrito-item-acciones">
                                                 <span className="carrito-item-precio">S/ {(item.price * item.quantity).toLocaleString('es-PE')}</span>
-                                                <button 
+                                                <button
                                                     className="carrito-item-eliminar"
                                                     onClick={() => eliminarDelCarrito(item.id)}
                                                 >
@@ -183,8 +195,8 @@ function Cabecera() {
                                     <span>Total:</span>
                                     <span>S/ {total.toLocaleString('es-PE')}</span>
                                 </div>
-                                <Link 
-                                    to="/Carrito" 
+                                <Link
+                                    to="/Carrito"
                                     className="btn-visualizar-carrito"
                                     onClick={toggleModal}
                                 >
@@ -197,9 +209,9 @@ function Cabecera() {
             )}
 
             {showAuthModal && (
-                <AuthModal 
-                    onClose={() => setShowAuthModal(false)} 
-                    onSuccess={() => setShowAuthModal(false)} 
+                <AuthModal
+                    onClose={() => setShowAuthModal(false)}
+                    onSuccess={() => setShowAuthModal(false)}
                 />
             )}
         </section>
