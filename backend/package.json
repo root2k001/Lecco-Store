@@ -23,6 +23,10 @@
     "nodemailer": "^9.1.0",
     "resend": "^6.14.0"
   },
+  "pnpm": {
+  "onlyBuiltDependencies": ["@prisma/client", "@prisma/engines", "prisma", "bcrypt"]
+},
+  
   "devDependencies": {
     "prisma": "^5.14.0"
   }
