@@ -22,7 +22,7 @@ function Cabecera() {
 
 
     return (
-       <section className="header">
+        <section className="header">
             <nav className={`navigation ${menuMobileAbierto ? 'nav-abierto' : ''}`}>
                 <ul>
                     <li>
@@ -47,12 +47,15 @@ function Cabecera() {
                     {!usuario ? (
                         <li>
                             <button
-                                className="carrito-icono"
-                                style={{ marginRight: '15px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '24px' }}
+                                className="cabecera-iconos"
+                                style={{ marginRight: '15px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#111', display: 'flex', alignItems: 'center' }}
                                 onClick={() => { setShowAuthModal(true); setMenuMobileAbierto(false); }}
                                 title="Iniciar Sesión"
                             >
-                                👤
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="8" r="4" />
+                                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                                </svg>
                             </button>
                         </li>
                     ) : (
@@ -65,8 +68,12 @@ function Cabecera() {
                         </li>
                     )}
                     <li className="carrito-container">
-                        <button className="carrito-icono" onClick={() => { toggleModal(); setMenuMobileAbierto(false); }}>
-                            🛒
+                        <button className="cabecera-iconos" onClick={() => { toggleModal(); setMenuMobileAbierto(false); }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <path d="M16 10a4 4 0 0 1-8 0" />
+                            </svg>
                         </button>
                         {cantidadTotal > 0 && (
                             <span className="contador-productos">{cantidadTotal}</span>
