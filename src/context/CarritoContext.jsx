@@ -1,33 +1,40 @@
-import { useState, useContext, createContext, useEffect } from 'react'
+import { useState, useContext, createContext, useEffect, useMemo } from 'react'
 import { useToast } from './ToastContext'
 
 export const CarritoContext = createContext()
 
-export const useCarrito = () => useContext(CarritoContext)
+export const useCarrito = () => {
+    const context = useContext(CarritoContext);
+    if (context === undefined) {
+        throw new Error('useCarrito debe usarse dentro de un CarritoProvider');
+    }
+    return context;
+}
 
 export function CarritoProvider({ children }) {
     const { addToast } = useToast()
 
     // revisa  si hay compras  previas  guardadas  en el localstorage del navegador
     const [carrito, setCarrito] = useState(() => {
-        const guardando = localStorage.getItem('carrito-lecco')
-        return guardando ? JSON.parse(guardando) : []
+        try {
+            const guardando = localStorage.getItem('carrito-lecco')
+            return guardando ? JSON.parse(guardando) : []
+        } catch {
+            return []
+        }
     })
+
     // cada vez que  cambia  el carrito  se  actualiza el  localstorage
     useEffect(() => {
         localStorage.setItem('carrito-lecco', JSON.stringify(carrito))
     }, [carrito])
 
-
-
     const agregarAlCarrito = (producto) => {
         let added = false;
         let noStock = false;
 
-
         //funcion que setea el nuevo estado del carrito
         setCarrito(prev => {
-
             //constante  de validacion para  revisar si el  producto  ya  esta en el  carrito
             const existenteProducto = prev.find(p => p.id === producto.id)
             //constante  de stock que revisa  si el  producto  tiene stock o cantidad disponible
@@ -97,14 +104,14 @@ export function CarritoProvider({ children }) {
         setCarrito([])
     }
 
-    const valorCarrito = {
+    const valorCarrito = useMemo(() => ({
         carrito,
         agregarAlCarrito,
         eliminarDelCarrito,
         incrementarCantidad,
         decrementarCantidad,
         vaciarCarrito
-    }
+    }), [carrito])
 
     return (
         <CarritoContext.Provider value={valorCarrito}>

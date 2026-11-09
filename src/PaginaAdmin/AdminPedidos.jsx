@@ -1,7 +1,7 @@
 import { useState, useMemo, Fragment } from 'react';
 import ExportCSV from './ExportCSV';
 
-function AdminPedidos({ pedidos, token, onReload }) {
+function AdminPedidos({ pedidos, onReload }) {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
   const [expandido, setExpandido] = useState(null);
@@ -26,7 +26,7 @@ function AdminPedidos({ pedidos, token, onReload }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+        credentials: 'include',
         },
         body: JSON.stringify({ estado: nuevoEstado, motivo })
       });

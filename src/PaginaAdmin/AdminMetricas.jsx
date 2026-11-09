@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react';
 
-function AdminMetricas({ token }) {
+function AdminMetricas() {
   const [stats, setStats] = useState(null);
   const [cargando, setCargando] = useState(true);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
+  async function fetchStats() {
     try {
       const res = await fetch('/api/stats', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.status === 401) {
         // En caso de 401, simplemente retorna, AdminDashboard manejará el logout principal
@@ -26,7 +22,11 @@ function AdminMetricas({ token }) {
     } finally {
       setCargando(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   if (cargando) return <div className="admin-tab-loading">Cargando métricas...</div>;
   if (!stats) return <div className="admin-tab-loading">Error al cargar estadísticas</div>;

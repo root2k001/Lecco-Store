@@ -8,14 +8,24 @@ datasource db {
 }
 
 model Usuario {
-  id         Int                @id @default(autoincrement())
-  nombre     String
-  email      String             @unique
-  password   String    
-  rol        String             @default("cliente")
-  creadoEn   DateTime           @default(now())
-  pedidos    Pedido[]
-  historial  HistorialCambios[]
+  id            Int                @id @default(autoincrement())
+  nombre        String
+  email         String             @unique
+  password      String    
+  rol           String             @default("cliente")
+  creadoEn      DateTime           @default(now())
+  pedidos       Pedido[]
+  historial     HistorialCambios[]
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  usuarioId Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  expiraEn  DateTime
+  creadoEn  DateTime @default(now())
 }
 
 model Producto {

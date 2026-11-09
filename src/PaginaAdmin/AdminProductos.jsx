@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ProductoModal, ConfirmModal } from './AdminModals';
 import ExportCSV from './ExportCSV';
 
-function AdminProductos({ productos, token, onReload }) {
+function AdminProductos({ productos, onReload }) {
   const [modalProducto, setModalProducto] = useState(null); // null = cerrado, {} = nuevo, {id,...} = editar
   const [mostrarModal, setMostrarModal] = useState(false);
   const [confirmarEliminar, setConfirmarEliminar] = useState(null);
@@ -27,7 +27,7 @@ function AdminProductos({ productos, token, onReload }) {
     try {
       const res = await fetch(`/api/productos/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.ok) {
         setConfirmarEliminar(null);
@@ -51,7 +51,7 @@ function AdminProductos({ productos, token, onReload }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+        credentials: 'include',
         },
         body: JSON.stringify({ stock: parseInt(nuevoStock) })
       });
@@ -178,7 +178,7 @@ function AdminProductos({ productos, token, onReload }) {
       {mostrarModal && (
         <ProductoModal
           producto={modalProducto}
-          token={token}
+
           onClose={() => { setMostrarModal(false); setModalProducto(null); }}
           onSave={handleSave}
         />

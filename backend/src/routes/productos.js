@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import prisma from '../prisma.js';
 import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
+import { crearProductoSchema, actualizarProductoSchema } from '../validators/productos.js';
 
 const router = Router();
 
@@ -49,7 +50,11 @@ router.get('/:id', async (req, res) => {
 
 // Crear un producto
 router.post('/', verifyToken, verifyAdmin, async (req, res) => {
-  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = req.body;
+  const validacion = crearProductoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de actualización inválidos' });
+  }
+  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = validacion.data;
   try {
     const nuevoProducto = await prisma.producto.create({
       data: {
@@ -75,7 +80,11 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   const { id } = req.params;
 
   // Whitelist: solo estos campos pueden ser modificados
-  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = req.body;
+  const validacion = actualizarProductoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de actualización inválidos' });
+  }
+  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = validacion.data;
   const data = {};
   if (nombre !== undefined) data.nombre = nombre;
   if (precio !== undefined) data.precio = precio;

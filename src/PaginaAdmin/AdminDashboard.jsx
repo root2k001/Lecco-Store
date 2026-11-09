@@ -9,7 +9,7 @@ import AdminHistorial from './AdminHistorial';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
-  const { usuario, token, logout } = useAuth();
+  const { usuario, logout } = useAuth();
   const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -18,24 +18,16 @@ function AdminDashboard() {
   const [historial, setHistorial] = useState([]);
   const [cargando, setCargando] = useState(true);
 
-  useEffect(() => {
-    if (!usuario || usuario.rol !== 'admin') {
-      navigate('/');
-    } else {
-      cargarDatos();
-    }
-  }, [usuario, navigate]);
-
-  const cargarDatos = async () => {
+  async function cargarDatos() {
     setCargando(true);
     try {
       const [resPedidos, resProductos, resHistorial] = await Promise.all([
         fetch('/api/pedidos/admin/todos', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         }),
         fetch('/api/productos'),
         fetch('/api/historial', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          credentials: 'include'
         })
       ]);
 
@@ -61,6 +53,16 @@ function AdminDashboard() {
       setCargando(false);
     }
   };
+
+  useEffect(() => {
+    if (!usuario || usuario.rol !== 'admin') {
+      navigate('/');
+    } else {
+      cargarDatos();
+    }
+  }, [usuario, navigate]);
+
+
 
   const tabs = [
     {
@@ -167,13 +169,13 @@ function AdminDashboard() {
       {/* Contenido principal */}
       <main className="admin-content">
         {activeTab === 'dashboard' && (
-          <AdminMetricas token={token} />
+          <AdminMetricas />
         )}
 
         {activeTab === 'pedidos' && (
           <AdminPedidos
             pedidos={pedidos}
-            token={token}
+
             onReload={cargarDatos}
           />
         )}
@@ -181,13 +183,13 @@ function AdminDashboard() {
         {activeTab === 'productos' && (
           <AdminProductos
             productos={productos}
-            token={token}
+
             onReload={cargarDatos}
           />
         )}
 
         {activeTab === 'mensajes' && (
-          <AdminMensajes token={token} />
+          <AdminMensajes />
         )}
 
         {activeTab === 'historial' && (

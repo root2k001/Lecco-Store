@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
  * Modal reutilizable para Crear / Editar un producto
  * Con zona de Drag & Drop para subir imágenes a Cloudinary
  */
-function ProductoModal({ producto, onClose, onSave, token }) {
+function ProductoModal({ producto, onClose, onSave }) {
   const esEdicion = !!producto;
 
   const [form, setForm] = useState({
@@ -64,8 +64,9 @@ function ProductoModal({ producto, onClose, onSave, token }) {
 
       const res = await fetch('/api/upload', {
         method: 'POST',
+        credentials: 'include',
         headers: {
-          'Authorization': `Bearer ${token}`
+
         },
         body: formData
       });
@@ -157,9 +158,10 @@ function ProductoModal({ producto, onClose, onSave, token }) {
 
       const res = await fetch(url, {
         method: esEdicion ? 'PUT' : 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+
         },
         body: JSON.stringify({
           nombre: form.nombre.trim(),

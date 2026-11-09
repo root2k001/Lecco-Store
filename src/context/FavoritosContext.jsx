@@ -1,17 +1,29 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import { useToast } from './ToastContext';
 
 const FavoritosContext = createContext();
 
-export const useFavoritos = () => useContext(FavoritosContext);
+export const useFavoritos = () => {
+    const context = useContext(FavoritosContext);
+    if (context === undefined) {
+        throw new Error('useFavoritos debe usarse dentro de un FavoritosProvider');
+    }
+    return context;
+};
 
     export function FavoritosProvider({ children }) {
     const { addToast } = useToast();
 
     // Cargamos los favoritos desde LocalStorage al iniciar
     const [favoritos, setFavoritos] = useState(() => {
-        const guardado = localStorage.getItem('lecco-favoritos');
-        return guardado ? JSON.parse(guardado) : {};
+        try {
+            const guardado = localStorage.getItem('lecco-favoritos');
+            return guardado ? JSON.parse(guardado) : {};
+    
+        } catch {
+            return {};
+        }
+
     });
 
     // Guardamos en LocalStorage cada vez que cambian los favoritos
@@ -44,10 +56,17 @@ export const useFavoritos = () => useContext(FavoritosContext);
 
     const esFavorito = (id) => Boolean(favoritos[id]);
 
-    const listaFavoritos = Object.values(favoritos);
+    const listaFavoritos = useMemo(() => Object.values(favoritos), [favoritos]);
+
+    const valorFavoritos = useMemo(() => ({
+        favoritos,
+        toggleFavorito,
+        esFavorito,
+        listaFavoritos
+    }), [favoritos, listaFavoritos]);
 
     return (
-        <FavoritosContext.Provider value={{ favoritos, toggleFavorito, esFavorito, listaFavoritos }}>
+        <FavoritosContext.Provider value={valorFavoritos}>
             {children}
         </FavoritosContext.Provider>
     );

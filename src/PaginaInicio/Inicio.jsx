@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Cabecera from '../Compartidos/cabecera/cabecera';
 import PiePagina from '../Compartidos/footer/Footer';
-import './inicio.css';
+import styles from './Inicio.module.css';
 
 function CategoriaCarrusel({ imagenes, fallbackClass }) {
   const [idx, setIdx] = useState(0);
@@ -21,13 +21,13 @@ function CategoriaCarrusel({ imagenes, fallbackClass }) {
   }
 
   return (
-    <div className="categoria-carrusel-container">
+    <div className={styles['categoria-carrusel-container']}>
       {imagenes.map((img, i) => (
         <img 
           key={i} 
           src={img} 
           alt="Categoria" 
-          className={`categoria-carrusel-img ${i === idx ? 'active' : ''}`}
+          className={`${styles['categoria-carrusel-img']} ${i === idx ? styles['active'] : ''}`}
         />
       ))}
     </div>
@@ -59,85 +59,85 @@ function Inicio() {
   }, []);
 
   return (
-    <div className="inicio-pagina">
+    <div className={`${styles['inicio-pagina'] || 'inicio-pagina'}`}>
       <Cabecera />
 
       {/* HERO SECTION */}
-      <section className="hero-section">
-        <div className="hero-background"></div>
-        <div className="hero-overlay"></div>
-        <div className="hero-content">
-          <h1 className="hero-title">Lecco</h1>
-          <p className="hero-subtitle">El estilo perfecto empieza por tu mirada</p>
-          <Link to="/Coleccion" className="hero-btn">Ver Colección</Link>
+      <section className={`${styles['hero-section'] || 'hero-section'}`}>
+        <div className={`${styles['hero-background'] || 'hero-background'}`}></div>
+        <div className={`${styles['hero-overlay'] || 'hero-overlay'}`}></div>
+        <div className={`${styles['hero-content'] || 'hero-content'}`}>
+          <h1 className={`${styles['hero-title'] || 'hero-title'}`}>Lecco</h1>
+          <p className={`${styles['hero-subtitle'] || 'hero-subtitle'}`}>El estilo perfecto empieza por tu mirada</p>
+          <Link to="/Coleccion" className={`${styles['hero-btn'] || 'hero-btn'}`}>Ver Colección</Link>
         </div>
       </section>
 
       {/* CATEGORIES SECTION */}
-      <section className="categorias-section">
-        <h2 className="section-title">Encuentra tu estilo</h2>
-        <div className="categorias-grid">
-          <Link to="/Coleccion" className="categoria-card">
+      <section className={`${styles['categorias-section'] || 'categorias-section'}`}>
+        <h2 className={`${styles['section-title'] || 'section-title'}`}>Encuentra tu estilo</h2>
+        <div className={`${styles['categorias-grid'] || 'categorias-grid'}`}>
+          <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
             <CategoriaCarrusel 
               imagenes={todosLosProductos.filter(p => p.genero === 'hombre' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)} 
               fallbackClass="hombre-bg" 
             />
-            <div className="categoria-info">
+            <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
               <h3>Para Él</h3>
-              <span className="categoria-link">Explorar →</span>
+              <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
             </div>
           </Link>
-          <Link to="/Coleccion" className="categoria-card">
+          <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
             <CategoriaCarrusel 
               imagenes={todosLosProductos.filter(p => p.genero === 'mujer' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)} 
               fallbackClass="mujer-bg" 
             />
-            <div className="categoria-info">
+            <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
               <h3>Para Ella</h3>
-              <span className="categoria-link">Explorar →</span>
+              <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
             </div>
           </Link>
-          <Link to="/Coleccion" className="categoria-card">
+          <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
             <CategoriaCarrusel 
               imagenes={todosLosProductos.filter(p => p.genero === 'unisex' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)} 
               fallbackClass="unisex-bg" 
             />
-            <div className="categoria-info">
+            <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
               <h3>Unisex</h3>
-              <span className="categoria-link">Explorar →</span>
+              <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
             </div>
           </Link>
         </div>
       </section>
 
       {/* DESTACADOS SECTION */}
-      <section className="destacados-section">
-        <div className="destacados-header">
-          <h2 className="section-title">Nuevos Ingresos</h2>
-          <Link to="/Coleccion" className="link-ver-todo">Ver todos</Link>
+      <section className={`${styles['destacados-section'] || 'destacados-section'}`}>
+        <div className={`${styles['destacados-header'] || 'destacados-header'}`}>
+          <h2 className={`${styles['section-title'] || 'section-title'}`}>Nuevos Ingresos</h2>
+          <Link to="/Coleccion" className={`${styles['link-ver-todo'] || 'link-ver-todo'}`}>Ver todos</Link>
         </div>
 
         {loading ? (
-          <div className="destacados-grid skeleton-grid">
+          <div className={`${styles['destacados-grid'] || 'destacados-grid'} ${styles['skeleton-grid'] || 'skeleton-grid'}`}>
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className="producto-skeleton">
-                <div className="skeleton-imagen"></div>
-                <div className="skeleton-texto"></div>
+              <div key={i} className={`${styles['producto-skeleton'] || 'producto-skeleton'}`}>
+                <div className={`${styles['skeleton-imagen'] || 'skeleton-imagen'}`}></div>
+                <div className={`${styles['skeleton-texto'] || 'skeleton-texto'}`}></div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="destacados-grid">
+          <div className={`${styles['destacados-grid'] || 'destacados-grid'}`}>
             {productosDestacados.map(prod => (
-              <Link to="/Coleccion" key={prod.id} className="destacado-card">
-                <div className="destacado-img-wrapper">
+              <Link to="/Coleccion" key={prod.id} className={`${styles['destacado-card'] || 'destacado-card'}`}>
+                <div className={`${styles['destacado-img-wrapper'] || 'destacado-img-wrapper'}`}>
                   {prod.imagen && prod.imagen !== 'en proceso' ? (
                     <img src={prod.imagen} alt={prod.nombre} />
                   ) : (
-                    <div className="imagen-placeholder">👓</div>
+                    <div className={`${styles['imagen-placeholder'] || 'imagen-placeholder'}`}>👓</div>
                   )}
                 </div>
-                <div className="destacado-info">
+                <div className={`${styles['destacado-info'] || 'destacado-info'}`}>
                   <h4>{prod.nombre}</h4>
                   <p>S/ {Number(prod.precio).toLocaleString('es-PE')}</p>
                 </div>

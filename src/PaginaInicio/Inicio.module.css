@@ -32,8 +32,13 @@
 }
 
 @keyframes sutilZoom {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.05); }
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.05);
+  }
 }
 
 .hero-overlay {
@@ -42,7 +47,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.5));
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.5));
   z-index: 2;
 }
 
@@ -56,8 +61,15 @@
 }
 
 @keyframes fadeUp {
-  0% { opacity: 0; transform: translateY(30px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-title {
@@ -147,6 +159,8 @@
 .categoria-carrusel-img {
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 450px;
   object-fit: cover;
   position: absolute;
   top: 0;
@@ -159,12 +173,22 @@
   opacity: 1;
 }
 
-.hombre-bg { background-color: #e2e8f0; } /* Reemplazar luego con img */
-.mujer-bg { background-color: #cbd5e1; }
-.unisex-bg { background-color: #f1f5f9; }
+.hombre-bg {
+  background-color: #e2e8f0;
+}
+
+/* Reemplazar luego con img */
+.mujer-bg {
+  background-color: #cbd5e1;
+}
+
+.unisex-bg {
+  background-color: #f1f5f9;
+}
 
 .categoria-card {
-  text-decoration: none; /* Asegurar que no subraye el texto interno del Link */
+  text-decoration: none;
+  /* Asegurar que no subraye el texto interno del Link */
   display: block;
 }
 
@@ -344,21 +368,21 @@
     font-size: 3.5rem;
     letter-spacing: 6px;
   }
-  
+
   .hero-subtitle {
     font-size: 1rem;
   }
-  
+
   .destacados-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 15px;
   }
-  
+
   .historia-content {
     flex-direction: column;
   }
-  
+
   .historia-imagen {
     width: 100%;
   }

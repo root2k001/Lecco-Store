@@ -2,6 +2,7 @@ import { Router } from 'express';
 import prisma from '../prisma.js';
 import { verifyToken, verifyAdmin, optionalToken } from '../middlewares/authMiddleware.js';
 import { Resend } from 'resend';
+import { crearPedidoSchema, actualizarEstadoPedidoSchema } from '../validators/pedidos.js';
 
 const router = Router();
 
@@ -21,17 +22,21 @@ const crearResend = () => {
 
 // Mapa de estados para el email
 const estadoLabels = {
-  pendiente:   { label: 'Pendiente', color: '#d97706', bg: '#fef3c7' },
-  procesando:  { label: 'En Proceso', color: '#2563eb', bg: '#dbeafe' },
-  enviado:     { label: 'Enviado 🚀', color: '#db2777', bg: '#fce7f3' },
-  entregado:   { label: 'Entregado ✅', color: '#059669', bg: '#d1fae5' }
+  pendiente: { label: 'Pendiente', color: '#d97706', bg: '#fef3c7' },
+  procesando: { label: 'En Proceso', color: '#2563eb', bg: '#dbeafe' },
+  enviado: { label: 'Enviado ', color: '#db2777', bg: '#fce7f3' },
+  entregado: { label: 'Entregado ', color: '#059669', bg: '#d1fae5' }
 };
 
 // Crear un nuevo pedido (Opción A: acepta invitados sin cuenta)
 router.post('/', optionalToken, async (req, res) => {
   // Si el usuario está logueado, tendrá su ID. Si es invitado, será null.
   const usuarioId = req.usuario ? req.usuario.id : null;
-  const { items, direccion, ciudad, codigoPostal, telefono } = req.body;
+  const validacion = crearPedidoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de pedido inválidos' });
+  }
+  const { items, direccion, ciudad, codigoPostal, telefono } = validacion.data;
   // 'items' debe ser un arreglo: [{ productoId: 1, cantidad: 2 }]
   // El precio y total se calculan desde la base de datos (NUNCA del frontend)
 
@@ -77,16 +82,22 @@ router.post('/', optionalToken, async (req, res) => {
       }
 
       // 5. Crear el pedido con el total calculado por el servidor
+      const pedidoData = {
+        total: totalCalculado,
+        direccion,
+        ciudad,
+        codigoPostal,
+        telefono,
+        items: { create: itemsParaCrear }
+      };
+
+      // Solo vincular usuario si está logueado (invitados no tienen usuarioId)
+      if (usuarioId) {
+        pedidoData.usuario = { connect: { id: usuarioId } };
+      }
+
       const pedido = await tx.pedido.create({
-        data: {
-          usuarioId,
-          total: totalCalculado,
-          direccion,
-          ciudad,
-          codigoPostal,
-          telefono,
-          items: { create: itemsParaCrear }
-        },
+        data: pedidoData,
         include: { items: true }
       });
 
@@ -154,7 +165,11 @@ router.get('/admin/todos', verifyToken, verifyAdmin, async (req, res) => {
 // Actualizar el estado de un pedido (ej. pendiente -> enviado)
 router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
   const { id } = req.params;
-  const { estado, motivo } = req.body;
+  const validacion = actualizarEstadoPedidoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de estado no válidos' });
+  }
+  const { estado, motivo } = validacion.data;
 
   try {
     const pedidoPrevio = await prisma.pedido.findUnique({
@@ -204,7 +219,7 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
 
     // Ejecutar todas las transacciones atómicamente
     await prisma.$transaction(transacciones);
-    
+
     // Obtenemos el pedido actualizado de la bd o asumimos sus valores previos para continuar
     const pedidoActualizado = { ...pedidoPrevio, estado };
     // Preparar el detalle del historial

@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import './Carrito.css'
 import { useCarrito } from '../context/CarritoContext'
-import { useAuth } from '../context/AuthContext'
+
 import AuthModal from '../Compartidos/AuthModal/AuthModal'
 
 function Carrito() {
     const { carrito, eliminarDelCarrito, incrementarCantidad, decrementarCantidad, vaciarCarrito } = useCarrito()
-    const { usuario, token } = useAuth()
+
 
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [compraExitosa, setCompraExitosa] = useState(false)
@@ -72,12 +72,13 @@ function Carrito() {
 
             // Construir cabeceras: solo se incluye Authorization si hay token (usuario logueado)
             const headers = { 'Content-Type': 'application/json' }
-            if (token) headers['Authorization'] = `Bearer ${token}`
+
 
             // 1. Guardar el pedido en el backend con estado "pendiente"
             const response = await fetch('/api/pedidos', {
                 method: 'POST',
                 headers,
+                credentials: 'include',
                 body: JSON.stringify({
                     total: total,
                     items: items,
@@ -89,7 +90,8 @@ function Carrito() {
             })
 
             if (!response.ok) {
-                throw new Error('Error al procesar el pedido en el servidor')
+                const errorData = await response.json().catch(() => ({}))
+                throw new Error(errorData.error || 'Error al procesar el pedido en el servidor')
             }
 
             const data = await response.json()
@@ -106,7 +108,7 @@ function Carrito() {
             setMostrarEnvio(false)
         } catch (error) {
             console.error('Error:', error)
-            alert('Hubo un problema al procesar tu pedido. Por favor intenta de nuevo.')
+            alert(error.message || 'Hubo un problema al procesar tu pedido. Por favor intenta de nuevo.')
         } finally {
             setProcesando(false)
         }
@@ -118,7 +120,7 @@ function Carrito() {
             <div className="carrito-page">
                 <div className="carrito-vacio" style={{ marginTop: '50px' }}>
 
-                    <h2>¡Gracias la confianza {usuario?.nombre ? `, ${usuario.nombre}` : ''}  !</h2>
+                    <h2>¡Gracias la confianza  !</h2>
                     <p>Tu pedido ha sido registrado exitosamente y será enviado a:</p>
                     <p><strong>{envioDatos.direccion}, {envioDatos.ciudad}</strong></p>
                     <p>se estara concretando la compra por whatsApp en un momento </p>

@@ -8,6 +8,7 @@ import NotFound from './PaginaInformacion/NotFound.jsx'
 import AdminDashboard from './PaginaAdmin/AdminDashboard.jsx'
 import Perfil from './PaginaPerfil/Perfil.jsx'
 import RutaAdmin from './Compartidos/RutaAdmin/RutaAdmin.jsx'
+import ErrorBoundary from './Compartidos/ErrorBoundary/ErrorBoundary.jsx'
 
 
 
@@ -19,7 +20,8 @@ import { ToastProvider } from './context/ToastContext'
 
 function App() {
   return (
-    <ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
       <AuthProvider>
         <FavoritosProvider>
           <CarritoProvider>
@@ -37,6 +39,7 @@ function App() {
         </FavoritosProvider>
       </AuthProvider>
     </ToastProvider>
+    </ErrorBoundary>
   )
 }
 

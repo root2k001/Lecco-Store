@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 
 import productosRoutes from './routes/productos.js';
 import usuariosRoutes from './routes/usuarios.js';
@@ -14,11 +15,13 @@ const app = express();
 
 // Middlewares
 app.use(helmet()); // Headers de seguridad HTTP
+app.use(cookieParser()); // Parseo de cookies
+
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json());// para que el servidor entienda los datos enviados del front 
+app.use(express.json({ limit: '1mb' }));// para que el servidor entienda los datos enviados del front 
 
 
 // Rutas

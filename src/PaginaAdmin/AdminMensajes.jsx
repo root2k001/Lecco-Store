@@ -2,19 +2,15 @@ import { useState, useEffect } from 'react';
 import { ConfirmModal } from './AdminModals';
 import ExportCSV from './ExportCSV';
 
-function AdminMensajes({ token }) {
+function AdminMensajes() {
   const [mensajes, setMensajes] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [confirmarEliminar, setConfirmarEliminar] = useState(null);
 
-  useEffect(() => {
-    fetchMensajes();
-  }, []);
-
-  const fetchMensajes = async () => {
+  async function fetchMensajes() {
     try {
       const res = await fetch('/api/contacto', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -25,13 +21,17 @@ function AdminMensajes({ token }) {
     } finally {
       setCargando(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    fetchMensajes();
+  }, []);
 
   const handleEliminar = async (id) => {
     try {
       const res = await fetch(`/api/contacto/${id}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       if (res.ok) {
         setMensajes(mensajes.filter(m => m.id !== id));

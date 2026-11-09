@@ -45,7 +45,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error(' Error fatal al insertar los datos:', e);
+    console.error('Error fatal al insertar los datos:', e);
     process.exit(1);
   })
   .finally(async () => {

@@ -78,11 +78,11 @@ function ModalDetallePedido({ pedido, onClose }) {
 }
 
 function Perfil() {
-  const { usuario, token, actualizarPerfil } = useAuth();
+  const { usuario, isLoading, actualizarPerfil } = useAuth();
   const navigate = useNavigate();
 
-  const [nombre, setNombre] = useState('');
-  const [email, setEmail] = useState('');
+  const [nombre, setNombre] = useState(usuario?.nombre || '');
+  const [email, setEmail] = useState(usuario?.email || '');
   const [password, setPassword] = useState('');
   
   const [pedidos, setPedidos] = useState([]);
@@ -90,20 +90,10 @@ function Perfil() {
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [pedidoDetalle, setPedidoDetalle] = useState(null);
 
-  useEffect(() => {
-    if (!usuario) {
-      navigate('/');
-    } else {
-      setNombre(usuario.nombre || '');
-      setEmail(usuario.email || '');
-      cargarMisPedidos();
-    }
-  }, [usuario, navigate]);
-
-  const cargarMisPedidos = async () => {
+  async function cargarMisPedidos() {
     try {
       const res = await fetch('/api/pedidos/mis-pedidos', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        credentials: 'include'
       });
       const data = await res.json();
       if (res.ok) {
@@ -114,7 +104,17 @@ function Perfil() {
     } finally {
       setCargando(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    if (!isLoading && !usuario) {
+      navigate('/');
+    } else if (!isLoading && usuario) {
+
+
+      cargarMisPedidos();
+    }
+  }, [usuario, isLoading, navigate]);
 
   const handleActualizarDatos = async (e) => {
     e.preventDefault();
@@ -128,6 +128,18 @@ function Perfil() {
       setMensaje({ tipo: 'error', texto: error.message });
     }
   };
+
+  if (isLoading) {
+    return (
+      <>
+        <Cabecera />
+        <div className="perfil-container" style={{ textAlign: 'center', padding: '5rem 1rem', color: '#64748b' }}>
+          <p>Cargando información de tu cuenta...</p>
+        </div>
+        <PiePagina />
+      </>
+    );
+  }
 
   if (!usuario) return null;
 
@@ -148,7 +160,7 @@ function Perfil() {
                 {mensaje.texto}
               </div>
             )}
-            <form className="perfil-form" onSubmit={handleActualizarDatos}>
+            <form key={usuario?.id || 'perfil'} className="perfil-form" onSubmit={handleActualizarDatos}>
               <div className="form-group">
                 <label>Nombre Completo</label>
                 <input 

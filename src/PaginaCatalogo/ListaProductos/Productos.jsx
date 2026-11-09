@@ -1,71 +1,62 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useCarrito } from '../../context/CarritoContext'
-import { useFavoritos } from '../../context/FavoritosContext'
-import './Productos.css'
-import DetalleProducto from '../DetallesProductos/DetallesProductos.jsx'
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useCarrito } from '../../context/CarritoContext';
+import { useFavoritos } from '../../context/FavoritosContext';
+import './Productos.css';
+import DetalleProducto from '../DetallesProductos/DetallesProductos.jsx';
 
 const ProductosList = () => {
-    const [productos, setProductos] = useState([])
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-    const [productoSeleccionado, setProductoSeleccionado] = useState(null)
+    const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     const [filtros, setFiltros] = useState({
         hombre: false,
         mujer: false,
         unisex: false
-    })
-    const [orden, setOrden] = useState('relevante')
-    const [mostrarFiltrosMenu, setMostrarFiltrosMenu] = useState(false)
+    });
+    const [orden, setOrden] = useState('relevante');
+    const [mostrarFiltrosMenu, setMostrarFiltrosMenu] = useState(false);
 
     // ── Paginación ──────────────────────────────────────────────────────────────
-    const [pagina, setPagina] = useState(1)
-    const [totalPaginas, setTotalPaginas] = useState(1)
-    const [totalProductos, setTotalProductos] = useState(0)
-    const ITEMS_POR_PAGINA = 12
-    // ───────────────────────────────────────────────────────────────────────────
+    const [pagina, setPagina] = useState(1);
+    const ITEMS_POR_PAGINA = 12;
 
-    const { agregarAlCarrito } = useCarrito()
-    const { toggleFavorito, esFavorito } = useFavoritos()
-
-    useEffect(() => {
-        const cargarProductos = async () => {
-            try {
-                setLoading(true)
-                setError(null)
-                const response = await fetch(`/api/productos?page=${pagina}&limit=${ITEMS_POR_PAGINA}`)
-
-                if (!response.ok) {
-                    throw new Error('Error al cargar los productos desde el servidor')
-                }
-
-                const data = await response.json()
-                // La API ahora devuelve { productos, total, page, totalPages, limit }
-                const productosMapeados = (data.productos || data).map(p => ({
-                    id: p.id,
-                    name: p.nombre,
-                    price: Number(p.precio),
-                    img: p.imagen || 'en proceso',
-                    gender: p.genero,
-                    stock: p.stock,
-                    quantity: p.stock,
-                    descripcion: p.descripcion,
-                    imagenesAdicionales: p.imagenesAdicionales || [],
-                    videos: p.videos || []
-                }))
-                setProductos(productosMapeados)
-                if (data.totalPages !== undefined) {
-                    setTotalPaginas(data.totalPages)
-                    setTotalProductos(data.total)
-                }
-            } catch (err) {
-                setError(err.message || 'Error al cargar los productos')
-            } finally {
-                setLoading(false)
+    const { data, isLoading: loading, error } = useQuery({
+        queryKey: ['productos', pagina, ITEMS_POR_PAGINA],
+        queryFn: async () => {
+            const response = await fetch(`/api/productos?page=${pagina}&limit=${ITEMS_POR_PAGINA}`);
+            if (!response.ok) {
+                throw new Error('Error al cargar los productos desde el servidor');
             }
-        }
+            const data = await response.json();
+            const productosMapeados = (data.productos || data).map(p => ({
+                id: p.id,
+                name: p.nombre,
+                price: Number(p.precio),
+                img: p.imagen || 'en proceso',
+                gender: p.genero,
+                stock: p.stock,
+                quantity: p.stock,
+                descripcion: p.descripcion,
+                imagenesAdicionales: p.imagenesAdicionales || [],
+                videos: p.videos || []
+            }));
+            
+            return {
+                productos: productosMapeados,
+                totalPaginas: data.totalPages || 1,
+                totalProductos: data.total || 0
+            };
+        },
+        // Mantiene la data previa mientras hace fetching para mejor UX
+        placeholderData: (previousData) => previousData,
+        staleTime: 5 * 60 * 1000 // 5 minutos de caché
+    });
 
-        cargarProductos()
-    }, [pagina])
+    const productos = data?.productos || [];
+    const totalPaginas = data?.totalPaginas || 1;
+    const totalProductos = data?.totalProductos || 0;
+
+    const { agregarAlCarrito } = useCarrito();
+    const { toggleFavorito, esFavorito } = useFavoritos();
 
     const handleImageClick = (producto) => {
         setProductoSeleccionado(producto)
