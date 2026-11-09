@@ -22,13 +22,7 @@ function Cabecera() {
 
 
     return (
-        <section className="header">
-            <Link to="/" className="logo">Lecco</Link>
-
-            <button className="menu-hamburguesa" onClick={toggleMenuMobile}>
-                {menuMobileAbierto ? '✕' : '☰'}
-            </button>
-
+       <section className="header">
             <nav className={`navigation ${menuMobileAbierto ? 'nav-abierto' : ''}`}>
                 <ul>
                     <li>
@@ -43,11 +37,18 @@ function Cabecera() {
                     <li>
                         <Link to="/Contacto" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Contacto</Link>
                     </li>
+                </ul>
+            </nav>
+
+            <Link to="/" className="logo">Lecco</Link>
+
+            <nav>
+                <ul>
                     {!usuario ? (
                         <li>
-                            <button 
-                                className="carrito-icono" 
-                                style={{ marginRight: '15px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '24px' }} 
+                            <button
+                                className="carrito-icono"
+                                style={{ marginRight: '15px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '24px' }}
                                 onClick={() => { setShowAuthModal(true); setMenuMobileAbierto(false); }}
                                 title="Iniciar Sesión"
                             >
@@ -57,9 +58,9 @@ function Cabecera() {
                     ) : (
                         <li className="usuario-nav">
                             {usuario.rol === 'admin' && (
-                                <Link to="/admin" className="menu-link" style={{color: '#3b82f6', fontWeight: 'bold'}} onClick={() => setMenuMobileAbierto(false)}>Panel Admin</Link>
+                                <Link to="/admin" className="menu-link" style={{ color: '#3b82f6', fontWeight: 'bold' }} onClick={() => setMenuMobileAbierto(false)}>Panel Admin</Link>
                             )}
-                            <Link to="/perfil" className="usuario-nombre" style={{textDecoration: 'none'}} title="Ir a Mi Perfil" onClick={() => setMenuMobileAbierto(false)}>Hola, {usuario.nombre}</Link>
+                            <Link to="/perfil" className="usuario-nombre" style={{ textDecoration: 'none' }} title="Ir a Mi Perfil" onClick={() => setMenuMobileAbierto(false)}>Hola, {usuario.nombre}</Link>
                             <button className="btn-logout" onClick={() => { logout(); setMenuMobileAbierto(false); }}>Cerrar Sesión</button>
                         </li>
                     )}
@@ -73,6 +74,10 @@ function Cabecera() {
                     </li>
                 </ul>
             </nav>
+
+            <button className="menu-hamburguesa" onClick={toggleMenuMobile}>
+                {menuMobileAbierto ? '✕' : '☰'}
+            </button>
 
             {mostrarModal && (
                 <div className="carrito-modal-overlay" onClick={toggleModal}>
@@ -99,16 +104,16 @@ function Cabecera() {
                                                 <div className="carrito-item-info">
                                                     <span className="carrito-item-nombre">{item.name}</span>
                                                     <div className="carrito-item-cantidad-selector">
-                                                        <button 
-                                                            className="btn-cantidad" 
+                                                        <button
+                                                            className="btn-cantidad"
                                                             onClick={() => decrementarCantidad(item.id)}
                                                             title="Disminuir cantidad"
                                                         >
                                                             -
                                                         </button>
                                                         <span className="cantidad-numero">{item.quantity}</span>
-                                                        <button 
-                                                            className="btn-cantidad" 
+                                                        <button
+                                                            className="btn-cantidad"
                                                             onClick={() => incrementarCantidad(item.id)}
                                                             title={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? "Límite de stock alcanzado" : "Aumentar cantidad"}
                                                             disabled={item.quantity >= (item.stock !== undefined ? item.stock : Infinity)}
@@ -121,7 +126,7 @@ function Cabecera() {
                                             </div>
                                             <div className="carrito-item-acciones">
                                                 <span className="carrito-item-precio">S/ {(item.price * item.quantity).toLocaleString('es-PE')}</span>
-                                                <button 
+                                                <button
                                                     className="carrito-item-eliminar"
                                                     onClick={() => eliminarDelCarrito(item.id)}
                                                 >
@@ -183,8 +188,8 @@ function Cabecera() {
                                     <span>Total:</span>
                                     <span>S/ {total.toLocaleString('es-PE')}</span>
                                 </div>
-                                <Link 
-                                    to="/Carrito" 
+                                <Link
+                                    to="/Carrito"
                                     className="btn-visualizar-carrito"
                                     onClick={toggleModal}
                                 >
@@ -197,9 +202,9 @@ function Cabecera() {
             )}
 
             {showAuthModal && (
-                <AuthModal 
-                    onClose={() => setShowAuthModal(false)} 
-                    onSuccess={() => setShowAuthModal(false)} 
+                <AuthModal
+                    onClose={() => setShowAuthModal(false)}
+                    onSuccess={() => setShowAuthModal(false)}
                 />
             )}
         </section>
