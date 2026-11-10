@@ -7,11 +7,6 @@ import DetalleProducto from '../DetallesProductos/DetallesProductos.jsx';
 
 const ProductosList = () => {
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
-    const [filtros, setFiltros] = useState({
-        hombre: false,
-        mujer: false,
-        unisex: false
-    });
     const [orden, setOrden] = useState('relevante');
     const [mostrarFiltrosMenu, setMostrarFiltrosMenu] = useState(false);
 
@@ -66,39 +61,8 @@ const ProductosList = () => {
         setProductoSeleccionado(null)
     }
 
-    const handleFiltroChange = (genero) => {
-        setFiltros(prev => ({
-            ...prev,
-            [genero]: !prev[genero]
-        }))
-    }
-
-    const handleOrdenChange = (e) => {
-        setOrden(e.target.value)
-    }
-
-    const handleCategoriaPill = (categoria) => {
-        if (categoria === 'todo') {
-            setFiltros({ hombre: false, mujer: false, unisex: false })
-        } else {
-            setFiltros({
-                hombre: categoria === 'hombre',
-                mujer: categoria === 'mujer',
-                unisex: categoria === 'unisex'
-            })
-        }
-    }
-
     const productosFiltrados = useMemo(() => {
         let resultado = [...productos]
-
-        const generosSeleccionados = Object.keys(filtros).filter(key => filtros[key])
-
-        if (generosSeleccionados.length > 0) {
-            resultado = resultado.filter(producto =>
-                generosSeleccionados.includes(producto.gender)
-            )
-        }
 
         if (orden === 'menor_mayor') {
             resultado = [...resultado].sort((a, b) => a.price - b.price)
@@ -107,7 +71,7 @@ const ProductosList = () => {
         }
 
         return resultado
-    }, [filtros, orden, productos])
+    }, [orden, productos])
 
 
     if (loading) {
@@ -168,34 +132,7 @@ const ProductosList = () => {
                         </p>
                     </div>
 
-                    <div className="filtro-barra-horizontal">
-                        <div className="pildoras-categorias">
-                            <button
-                                className={`pildora-btn ${(!filtros.hombre && !filtros.mujer && !filtros.unisex) ? 'activo' : ''}`}
-                                onClick={() => handleCategoriaPill('todo')}
-                            >
-                                Ver todo
-                            </button>
-                            <button
-                                className={`pildora-btn ${filtros.hombre ? 'activo' : ''}`}
-                                onClick={() => handleCategoriaPill('hombre')}
-                            >
-                                Para Él
-                            </button>
-                            <button
-                                className={`pildora-btn ${filtros.mujer ? 'activo' : ''}`}
-                                onClick={() => handleCategoriaPill('mujer')}
-                            >
-                                Para Ella
-                            </button>
-                            <button
-                                className={`pildora-btn ${filtros.unisex ? 'activo' : ''}`}
-                                onClick={() => handleCategoriaPill('unisex')}
-                            >
-                                Unisex
-                            </button>
-                        </div>
-
+                    <div className="filtro-barra-horizontal" style={{ justifyContent: 'flex-end' }}>
                         <button
                             className={`filtro-toggle-btn ${mostrarFiltrosMenu ? 'activo' : ''}`}
                             onClick={() => setMostrarFiltrosMenu(!mostrarFiltrosMenu)}
@@ -248,12 +185,6 @@ const ProductosList = () => {
                             <div className="no-resultados">
                                 <span>🔍</span>
                                 <p>No se encontraron productos</p>
-                                <button
-                                    className="btn-limpiar-filtros"
-                                    onClick={() => handleCategoriaPill('todo')}
-                                >
-                                    Limpiar filtros
-                                </button>
                             </div>
                         ) : (
                             productosFiltrados.map((producto) => {

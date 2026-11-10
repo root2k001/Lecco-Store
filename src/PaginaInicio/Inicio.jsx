@@ -23,10 +23,10 @@ function CategoriaCarrusel({ imagenes, fallbackClass }) {
   return (
     <div className={styles['categoria-carrusel-container']}>
       {imagenes.map((img, i) => (
-        <img 
-          key={i} 
-          src={img} 
-          alt="Categoria" 
+        <img
+          key={i}
+          src={img}
+          alt="Categoria"
           className={`${styles['categoria-carrusel-img']} ${i === idx ? styles['active'] : ''}`}
         />
       ))}
@@ -78,32 +78,29 @@ function Inicio() {
         <h2 className={`${styles['section-title'] || 'section-title'}`}>Encuentra tu estilo</h2>
         <div className={`${styles['categorias-grid'] || 'categorias-grid'}`}>
           <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
-            <CategoriaCarrusel 
-              imagenes={todosLosProductos.filter(p => p.genero === 'hombre' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)} 
-              fallbackClass="hombre-bg" 
+            <CategoriaCarrusel
+              imagenes={todosLosProductos.filter(p => p.genero === 'hombre' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
+              fallbackClass="hombre-bg"
             />
             <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
-              <h3>Para Él</h3>
               <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
             </div>
           </Link>
           <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
-            <CategoriaCarrusel 
-              imagenes={todosLosProductos.filter(p => p.genero === 'mujer' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)} 
-              fallbackClass="mujer-bg" 
+            <CategoriaCarrusel
+              imagenes={todosLosProductos.filter(p => p.genero === 'mujer' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
+              fallbackClass="mujer-bg"
             />
             <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
-              <h3>Para Ella</h3>
               <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
             </div>
           </Link>
           <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
-            <CategoriaCarrusel 
-              imagenes={todosLosProductos.filter(p => p.genero === 'unisex' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)} 
-              fallbackClass="unisex-bg" 
+            <CategoriaCarrusel
+              imagenes={todosLosProductos.filter(p => p.genero === 'unisex' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
+              fallbackClass="unisex-bg"
             />
             <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
-              <h3>Unisex</h3>
               <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
             </div>
           </Link>
