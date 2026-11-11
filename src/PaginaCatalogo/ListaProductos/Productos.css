@@ -3,7 +3,7 @@
 .contenido {
     width: 100%;
     min-height: 100vh;
-    background-color: #f7f7f7;
+    background-color: #ffffff;
     /* Fondo ultra limpio y suave */
     padding: 5rem 5% 7rem 5%;
 }
@@ -666,4 +666,5 @@
     border-color: #111;
     font-weight: 600;
 }
-/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────── */

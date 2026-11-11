@@ -18,14 +18,16 @@
 body {
   min-height: 100vh;
   width: 100%;
-  background-color: #fafafa;
+  background-color: #ffffff;
   color: #111;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* Encabezados globales con estilo Serif Editorial */
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: 'DM Sans', sans-serif;
   font-weight: 400;
   letter-spacing: 2px;

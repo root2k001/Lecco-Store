@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #fafafa;
+  background-color: #ffffff;
 }
 
 /* --- HERO SECTION --- */
@@ -54,7 +54,7 @@
 .hero-content {
   position: relative;
   z-index: 3;
-  color: #fff;
+  color: #ffffff;
   padding: 0 20px;
   max-width: 800px;
   animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -94,7 +94,7 @@
   padding: 16px 40px;
   background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
-  color: #fff;
+  color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.5);
   font-size: 0.9rem;
   font-weight: 500;
@@ -230,7 +230,7 @@
 /* --- DESTACADOS --- */
 .destacados-section {
   padding: 100px 5%;
-  background-color: #fafafa;
+  background-color: #ffffff;
 }
 
 .destacados-header {
