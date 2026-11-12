@@ -73,14 +73,19 @@ function Inicio() {
         </div>
       </section>
 
-      {/* CATEGORIES SECTION */}
+
+
+      {/* CATEGORIES SECTION 
+      PENDIENTE REVISAR  CODIGO ULTIMA MODIFICACION 12/11/26
+     
+      */}
       <section className={`${styles['categorias-section'] || 'categorias-section'}`}>
         <h2 className={`${styles['section-title'] || 'section-title'}`}>Encuentra tu estilo</h2>
         <div className={`${styles['categorias-grid'] || 'categorias-grid'}`}>
           <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
             <CategoriaCarrusel
-              imagenes={todosLosProductos.filter(p => p.genero === 'hombre' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
-              fallbackClass="hombre-bg"
+              imagenes={todosLosProductos.filter(p => p.genero === 'unisex' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
+              fallbackClass="unisex-bg"
             />
             <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
               <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
@@ -88,8 +93,8 @@ function Inicio() {
           </Link>
           <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
             <CategoriaCarrusel
-              imagenes={todosLosProductos.filter(p => p.genero === 'mujer' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
-              fallbackClass="mujer-bg"
+              imagenes={todosLosProductos.filter(p => p.genero === 'unisex' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
+              fallbackClass="unisex-bg"
             />
             <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
               <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>

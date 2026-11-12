@@ -1,10 +1,9 @@
-/* ===== CONTENEDOR MODAL PRINCIPAL ===== */
+/* ==========================================================================
+   1. CONTENEDOR MODAL PRINCIPAL
+   ========================================================================== */
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     background-color: rgba(0, 0, 0, 0.15);
     display: flex;
     justify-content: center;
@@ -15,7 +14,7 @@
 }
 
 .modal-content {
-    background-color: #ffffff;
+    background-color: var(--color-bg-white);
     border-radius: 0;
     max-width: 1200px;
     width: 95%;
@@ -29,19 +28,8 @@
     overflow: hidden;
 }
 
-@keyframes modalFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
 .modal-cerrar {
+    font-family: inherit;
     position: absolute;
     top: 1.5rem;
     right: 1.5rem;
@@ -58,32 +46,31 @@
 }
 
 .modal-cerrar:hover {
-    color: #111;
+    color: var(--color-primary);
 }
 
-/* ===== GRID INTERNO DEL DETALLE DE PRODUCTO ===== */
 .detalle-producto-container {
     display: flex;
     width: 100%;
     height: 100%;
 }
 
-/* ===== COLUMNA IZQUIERDA: CARRUSEL VERTICAL ===== */
+
+/* ==========================================================================
+   2. COLUMNA IZQUIERDA: CARRUSEL VERTICAL DE MEDIOS
+   ========================================================================== */
 .detalle-imagenes-carrusel {
     flex: 1.6;
     height: 100%;
     overflow-y: auto;
     scroll-snap-type: y mandatory;
     scrollbar-width: none;
-    /* Firefox */
     -ms-overflow-style: none;
-    /* IE */
-    background-color: #ffffff;
+    background-color: var(--color-bg-white);
 }
 
 .detalle-imagenes-carrusel::-webkit-scrollbar {
     display: none;
-    /* Chrome, Safari */
 }
 
 .carrusel-imagen-wrapper {
@@ -94,7 +81,7 @@
     justify-content: center;
     scroll-snap-align: start;
     position: relative;
-    background-color: #ffffff;
+    background-color: var(--color-bg-white);
 }
 
 .carrusel-imagen-wrapper img,
@@ -106,7 +93,6 @@
     outline: none;
 }
 
-/* Indicador de Scroll en la primera foto */
 .scroll-indicador {
     position: absolute;
     bottom: 2rem;
@@ -122,6 +108,175 @@
     text-transform: uppercase;
     animation: bounce 2s infinite;
     pointer-events: none;
+}
+
+.detalle-imagen-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8rem;
+    opacity: 0.1;
+    background-color: #f2f2f2;
+}
+
+
+/* ==========================================================================
+   3. COLUMNA DERECHA: PANEL DE DETALLES Y COMPRA
+   ========================================================================== */
+.detalle-info-panel {
+    flex: 1;
+    height: 100%;
+    padding: 3.5rem 3rem 3rem;
+    background-color: var(--color-bg-white);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    border-left: 1px solid var(--color-border);
+    scrollbar-width: none;
+}
+
+.detalle-info-panel::-webkit-scrollbar {
+    display: none;
+}
+
+.info-panel-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.info-titulo {
+    font-size: 1.8rem;
+    font-weight: 400;
+    letter-spacing: 2px;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.info-btn-favorito {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ccc;
+    transition: color 0.25s ease, transform 0.15s ease;
+}
+
+.info-btn-favorito:hover {
+    color: var(--color-primary);
+    transform: scale(1.08);
+}
+
+.info-btn-favorito.activo {
+    color: var(--color-primary);
+}
+
+.info-btn-favorito .bookmark-icono {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+}
+
+.info-precio {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 2rem;
+    letter-spacing: 0.5px;
+}
+
+.info-btn-carrito {
+    font-family: inherit;
+    width: 100%;
+    padding: 16px 0;
+    background-color: var(--color-primary);
+    color: var(--color-bg-white);
+    border: none;
+    border-radius: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+    margin-bottom: 3rem;
+}
+
+.info-btn-carrito:hover {
+    background-color: #333;
+}
+
+
+/* ==========================================================================
+   4. ACORDEONES DESPLEGABLES
+   ========================================================================== */
+.info-acordeones {
+    border-top: 1px solid var(--color-border);
+}
+
+.acordeon-item {
+    border-bottom: 1px solid var(--color-border);
+}
+
+.acordeon-btn {
+    font-family: inherit;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: none;
+    border: none;
+    padding: 16px 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--color-primary);
+    cursor: pointer;
+}
+
+.acordeon-contenido {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), padding-bottom 0.35s ease;
+}
+
+.acordeon-contenido.abierto {
+    max-height: 150px;
+    padding-bottom: 16px;
+}
+
+.acordeon-contenido p {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    line-height: 1.8;
+    margin: 0;
+    letter-spacing: 0.3px;
+}
+
+
+/* ==========================================================================
+   5. ANIMACIONES
+   ========================================================================== */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @keyframes bounce {
@@ -143,156 +298,10 @@
     }
 }
 
-.detalle-imagen-placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 8rem;
-    opacity: 0.1;
-    background-color: #f2f2f2;
-}
 
-/* ===== COLUMNA DERECHA: PANEL DE DETALLES FIJO ===== */
-.detalle-info-panel {
-    flex: 1;
-    height: 100%;
-    padding: 3.5rem 3rem 3rem 3rem;
-    background-color: #fff;
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    border-left: 1px solid #ebebeb;
-    scrollbar-width: none;
-}
-
-.detalle-info-panel::-webkit-scrollbar {
-    display: none;
-}
-
-/* Cabecera del Panel (Título y Favoritos) */
-.info-panel-cabecera {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 1.5rem;
-    margin-bottom: 0.5rem;
-}
-
-.info-titulo {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 1.8rem;
-    font-weight: 400;
-    letter-spacing: 2px;
-    color: #111;
-    text-transform: uppercase;
-    margin: 0;
-    line-height: 1.2;
-}
-
-.info-btn-favorito {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #ccc;
-    transition: color 0.25s ease, transform 0.15s ease;
-}
-
-.info-btn-favorito:hover {
-    color: #111;
-    transform: scale(1.08);
-}
-
-.info-btn-favorito.activo {
-    color: #111;
-}
-
-.info-btn-favorito .bookmark-icono {
-    width: 20px;
-    height: 20px;
-    fill: currentColor;
-}
-
-/* Precio */
-.info-precio {
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: #333;
-    margin-bottom: 2rem;
-    letter-spacing: 0.5px;
-}
-
-/* Botón Añadir al Carrito */
-.info-btn-carrito {
-    width: 100%;
-    padding: 16px 0;
-    background-color: #111;
-    color: #fff;
-    border: none;
-    border-radius: 0;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background-color 0.25s ease;
-    margin-bottom: 3rem;
-}
-
-.info-btn-carrito:hover {
-    background-color: #333;
-}
-
-/* Acordeones Desplegables */
-.info-acordeones {
-    border-top: 1px solid #ebebeb;
-}
-
-.acordeon-item {
-    border-bottom: 1px solid #ebebeb;
-}
-
-.acordeon-btn {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: none;
-    border: none;
-    padding: 16px 0;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: #111;
-    cursor: pointer;
-}
-
-.acordeon-contenido {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94), padding-bottom 0.35s ease;
-}
-
-.acordeon-contenido.abierto {
-    max-height: 150px;
-    padding-bottom: 16px;
-}
-
-.acordeon-contenido p {
-    font-size: 0.75rem;
-    color: #666;
-    line-height: 1.8;
-    margin: 0;
-    letter-spacing: 0.3px;
-}
-
-/* ===== RESPONSIVE ===== */
+/* ==========================================================================
+   6. RESPONSIVE DESIGN (TABLETS Y MÓVILES)
+   ========================================================================== */
 @media (max-width: 768px) {
     .modal-content {
         height: 95vh;
@@ -322,7 +331,7 @@
         height: auto;
         padding: 2.5rem 2rem;
         border-left: none;
-        border-top: 1px solid #ebebeb;
+        border-top: 1px solid var(--color-border);
     }
 
     .info-titulo {
