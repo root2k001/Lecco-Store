@@ -54,7 +54,7 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
   if (!validacion.success) {
     return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de actualización inválidos' });
   }
-  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = validacion.data;
+  const { nombre, precio, imagen, genero, color, stock, descripcion, imagenesAdicionales, videos } = validacion.data;
   try {
     const nuevoProducto = await prisma.producto.create({
       data: {
@@ -84,7 +84,7 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   if (!validacion.success) {
     return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de actualización inválidos' });
   }
-  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = validacion.data;
+  const { nombre, precio, imagen, genero, color, stock, descripcion, imagenesAdicionales, videos } = validacion.data;
   const data = {};
   if (nombre !== undefined) data.nombre = nombre;
   if (precio !== undefined) data.precio = precio;

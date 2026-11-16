@@ -51,7 +51,7 @@ function AdminProductos({ productos, onReload }) {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-        credentials: 'include',
+          credentials: 'include',
         },
         body: JSON.stringify({ stock: parseInt(nuevoStock) })
       });

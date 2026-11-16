@@ -7,7 +7,7 @@ import productosRoutes from './routes/productos.js';
 import usuariosRoutes from './routes/usuarios.js';
 import pedidosRoutes from './routes/pedidos.js';
 import historialRoutes from './routes/historial.js';
-import contactoRoutes from './routes/contacto.js';
+
 import statsRoutes from './routes/stats.js';
 import uploadRoutes from './routes/upload.js';
 
@@ -31,7 +31,7 @@ app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/historial', historialRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/api/contacto', contactoRoutes);
+
 
 // Ruta de prueba
 app.get('/api/health', (req, res) => {
@@ -42,8 +42,8 @@ app.get('/api/health', (req, res) => {
 app.use((err, req, res, next) => {
   console.error('Error no manejado:', err);
   res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === 'production' 
-      ? 'Error interno del servidor' 
+    error: process.env.NODE_ENV === 'production'
+      ? 'Error interno del servidor'
       : err.message
   });
 });

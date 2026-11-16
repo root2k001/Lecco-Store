@@ -1,78 +1,108 @@
-import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useMemo } from 'react';
 import { useCarrito } from '../../context/CarritoContext';
 import { useFavoritos } from '../../context/FavoritosContext';
 import './Productos.css';
 import DetalleProducto from '../DetallesProductos/DetallesProductos.jsx';
 
+const COLORES_DISPONIBLES = [
+    { id: 'negro', nombre: 'Negro', hex: '#111111' },
+    { id: 'marron', nombre: 'Marrón / Carey', hex: '#6d4c41' },
+    { id: 'dorado', nombre: 'Dorado', hex: '#d4af37' },
+    { id: 'plateado', nombre: 'Plateado', hex: '#b0bec5' },
+    { id: 'transparente', nombre: 'Transparente', hex: '#f8fafc', border: true },
+    { id: 'azul', nombre: 'Azul', hex: '#1e88e5' },
+    { id: 'rosa', nombre: 'Rosa / Púrpura', hex: '#d81b60' },
+    { id: 'verde', nombre: 'Verde', hex: '#2e7d32' }
+];
+
 const ProductosList = () => {
+    const [productos, setProductos] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     const [orden, setOrden] = useState('relevante');
+    const [colorSeleccionado, setColorSeleccionado] = useState(null);
     const [mostrarFiltrosMenu, setMostrarFiltrosMenu] = useState(false);
 
     // ── Paginación ──────────────────────────────────────────────────────────────
     const [pagina, setPagina] = useState(1);
+    const [totalPaginas, setTotalPaginas] = useState(1);
+    const [totalProductos, setTotalProductos] = useState(0);
     const ITEMS_POR_PAGINA = 12;
-
-    const { data, isLoading: loading, error } = useQuery({
-        queryKey: ['productos', pagina, ITEMS_POR_PAGINA],
-        queryFn: async () => {
-            const response = await fetch(`/api/productos?page=${pagina}&limit=${ITEMS_POR_PAGINA}`);
-            if (!response.ok) {
-                throw new Error('Error al cargar los productos desde el servidor');
-            }
-            const data = await response.json();
-            const productosMapeados = (data.productos || data).map(p => ({
-                id: p.id,
-                name: p.nombre,
-                price: Number(p.precio),
-                img: p.imagen || 'en proceso',
-                gender: p.genero,
-                stock: p.stock,
-                quantity: p.stock,
-                descripcion: p.descripcion,
-                imagenesAdicionales: p.imagenesAdicionales || [],
-                videos: p.videos || []
-            }));
-            
-            return {
-                productos: productosMapeados,
-                totalPaginas: data.totalPages || 1,
-                totalProductos: data.total || 0
-            };
-        },
-        // Mantiene la data previa mientras hace fetching para mejor UX
-        placeholderData: (previousData) => previousData,
-        staleTime: 5 * 60 * 1000 // 5 minutos de caché
-    });
-
-    const productos = data?.productos || [];
-    const totalPaginas = data?.totalPaginas || 1;
-    const totalProductos = data?.totalProductos || 0;
+    // ───────────────────────────────────────────────────────────────────────────
 
     const { agregarAlCarrito } = useCarrito();
     const { toggleFavorito, esFavorito } = useFavoritos();
 
+    useEffect(() => {
+        const cargarProductos = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                const response = await fetch(`/api/productos?page=${pagina}&limit=${ITEMS_POR_PAGINA}`);
+
+                if (!response.ok) {
+                    throw new Error('Error al cargar los productos desde el servidor');
+                }
+
+                const data = await response.json();
+                const productosMapeados = (data.productos || data).map(p => ({
+                    id: p.id,
+                    name: p.nombre,
+                    price: Number(p.precio),
+                    img: p.imagen || 'en proceso',
+                    gender: p.genero,
+                    color: p.color ? String(p.color).trim().toLowerCase() : null,
+                    stock: p.stock,
+                    quantity: p.stock,
+                    descripcion: p.descripcion,
+                    imagenesAdicionales: p.imagenesAdicionales || [],
+                    videos: p.videos || []
+                }));
+                setProductos(productosMapeados);
+                if (data.totalPages !== undefined) {
+                    setTotalPaginas(data.totalPages);
+                    setTotalProductos(data.total);
+                }
+            } catch (err) {
+                setError(err.message || 'Error al cargar los productos');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        cargarProductos();
+    }, [pagina]);
+
     const handleImageClick = (producto) => {
-        setProductoSeleccionado(producto)
-    }
+        setProductoSeleccionado(producto);
+    };
 
     const handleCerrarModal = () => {
-        setProductoSeleccionado(null)
-    }
+        setProductoSeleccionado(null);
+    };
 
     const productosFiltrados = useMemo(() => {
-        let resultado = [...productos]
+        let resultado = [...productos];
 
-        if (orden === 'menor_mayor') {
-            resultado = [...resultado].sort((a, b) => a.price - b.price)
-        } else if (orden === 'mayor_menor') {
-            resultado = [...resultado].sort((a, b) => b.price - a.price)
+        // Filtro estricto por color designado
+        if (colorSeleccionado) {
+            const buscado = colorSeleccionado.toLowerCase().trim();
+            resultado = resultado.filter(producto => {
+                if (!producto.color) return false;
+                return producto.color === buscado || producto.color.includes(buscado);
+            });
         }
 
-        return resultado
-    }, [orden, productos])
+        // Ordenamiento por precio
+        if (orden === 'menor_mayor') {
+            resultado = [...resultado].sort((a, b) => a.price - b.price);
+        } else if (orden === 'mayor_menor') {
+            resultado = [...resultado].sort((a, b) => b.price - a.price);
+        }
 
+        return resultado;
+    }, [colorSeleccionado, orden, productos]);
 
     if (loading) {
         return (
@@ -83,7 +113,6 @@ const ProductosList = () => {
                         <div className="skeleton-subtitle"></div>
                     </div>
                     <div className="filtro-barra-horizontal">
-                        <div className="skeleton-pills"></div>
                         <div className="skeleton-filter-btn"></div>
                     </div>
                     <div className="productos">
@@ -98,7 +127,7 @@ const ProductosList = () => {
                     </div>
                 </main>
             </section>
-        )
+        );
     }
 
     if (error) {
@@ -118,7 +147,7 @@ const ProductosList = () => {
                     </div>
                 </main>
             </section>
-        )
+        );
     }
 
     return (
@@ -132,7 +161,7 @@ const ProductosList = () => {
                         </p>
                     </div>
 
-                    <div className="filtro-barra-horizontal" style={{ justifyContent: 'flex-end' }}>
+                    <div className="filtro-barra-horizontal">
                         <button
                             className={`filtro-toggle-btn ${mostrarFiltrosMenu ? 'activo' : ''}`}
                             onClick={() => setMostrarFiltrosMenu(!mostrarFiltrosMenu)}
@@ -177,6 +206,36 @@ const ProductosList = () => {
                                     </button>
                                 </div>
                             </div>
+
+                            <div className="filtro-divisor-secciones"></div>
+
+                            <div className="filtro-seccion-colores">
+                                <span>Color:</span>
+                                <div className="opciones-color">
+                                    <button
+                                        className={`color-btn ${colorSeleccionado === null ? 'activo' : ''}`}
+                                        onClick={() => setColorSeleccionado(null)}
+                                    >
+                                        Todos
+                                    </button>
+                                    {COLORES_DISPONIBLES.map((c) => (
+                                        <button
+                                            key={c.id}
+                                            className={`color-btn ${colorSeleccionado === c.id ? 'activo' : ''}`}
+                                            onClick={() => setColorSeleccionado(colorSeleccionado === c.id ? null : c.id)}
+                                        >
+                                            <span
+                                                className="color-muestra"
+                                                style={{
+                                                    backgroundColor: c.hex,
+                                                    border: c.border ? '1px solid #d1d5db' : 'none'
+                                                }}
+                                            />
+                                            {c.nombre}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -184,7 +243,13 @@ const ProductosList = () => {
                         {productosFiltrados.length === 0 ? (
                             <div className="no-resultados">
                                 <span>🔍</span>
-                                <p>No se encontraron productos</p>
+                                <p>No se encontraron productos con el color seleccionado</p>
+                                <button
+                                    className="btn-limpiar-filtros"
+                                    onClick={() => setColorSeleccionado(null)}
+                                >
+                                    Ver todos los colores
+                                </button>
                             </div>
                         ) : (
                             productosFiltrados.map((producto) => {
@@ -201,65 +266,64 @@ const ProductosList = () => {
                                                         position: 'absolute',
                                                         top: '15px',
                                                         left: '15px',
-                                                        backgroundColor: 'rgba(254, 242, 242, 0.95)',
-                                                        color: '#ef4444',
-                                                        border: '1px solid #fca5a5',
+                                                        background: 'rgba(0, 0, 0, 0.75)',
+                                                        color: '#fff',
                                                         padding: '4px 10px',
-                                                        fontSize: '11px',
-                                                        fontWeight: 'bold',
-                                                        borderRadius: '2px',
-                                                        zIndex: 2,
-                                                        textTransform: 'uppercase',
-                                                        letterSpacing: '0.5px'
+                                                        fontSize: '0.65rem',
+                                                        fontWeight: '600',
+                                                        letterSpacing: '1px',
+                                                        textTransform: 'uppercase'
                                                     }}>
-                                                        Sin Stock
+                                                        Agotado
                                                     </div>
                                                 )}
-                                                <button
-                                                    className={`btn-carrito-hover ${producto.stock <= 0 ? 'agotado' : ''}`}
-                                                    disabled={producto.stock <= 0}
-                                                    style={producto.stock <= 0 ? { backgroundColor: '#94a3b8', cursor: 'not-allowed', color: '#fff', transform: 'none' } : {}}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        if (producto.stock > 0) {
-                                                            agregarAlCarrito(producto)
-                                                        }
-                                                    }}
-                                                >
-                                                    {producto.stock <= 0 ? 'Sin Stock' : 'Añadir al Carrito'}
-                                                </button>
+                                                {producto.videos && producto.videos.length > 0 && (
+                                                    <div className="producto-badge-video" title="Incluye video">
+                                                        ▶
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
-                                        <div className='producto-detalles-info'>
-                                            <div className='producto-divisor-linea'></div>
-
-                                            <div className='producto-meta-fila'>
-                                                <div className='producto-datos-principales'>
-                                                    <h3 className='producto-nombre' onClick={() => handleImageClick(producto)}>{producto.name}</h3>
-                                                    <p className='precio'>S/ {producto.price.toLocaleString('es-PE')}</p>
-
-
-                                                </div>
-
+                                        <div className='producto-info'>
+                                            <div className="producto-header">
+                                                <h3 className='producto-nombre'>{producto.name}</h3>
                                                 <button
-                                                    className={`btn-bookmark-guardar ${esFavorito(producto.id) ? 'activo' : ''}`}
+                                                    className={`btn-favorito ${esFavorito(producto.id) ? 'activo' : ''}`}
                                                     onClick={() => toggleFavorito(producto)}
-                                                    title={esFavorito(producto.id) ? "Quitar de favoritos" : "Guardar favorito"}
+                                                    title={esFavorito(producto.id) ? "Quitar de favoritos" : "Guardar en favoritos"}
                                                 >
                                                     <svg viewBox="0 0 24 24" className="bookmark-icono">
                                                         <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />
                                                     </svg>
                                                 </button>
                                             </div>
+
+                                            <p className='producto-precio'>S/ {producto.price.toLocaleString('es-PE')}</p>
+
+                                            <div className="producto-acciones">
+                                                <button
+                                                    className='btn-agregar-carrito'
+                                                    onClick={() => agregarAlCarrito(producto)}
+                                                    disabled={producto.stock <= 0}
+                                                >
+                                                    {producto.stock <= 0 ? 'Sin Stock' : 'Añadir a la bolsa'}
+                                                </button>
+                                                <button
+                                                    className='btn-ver-detalle'
+                                                    onClick={() => handleImageClick(producto)}
+                                                >
+                                                    Detalle
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                )
+                                );
                             })
                         )}
                     </div>
 
-                    {/* ── Controles de Paginación ─────────────────────────────────────────── */}
+                    {/* Controles de Paginación */}
                     {totalPaginas > 1 && (
                         <div className="paginacion-container">
                             <span className="paginacion-info">
@@ -292,8 +356,6 @@ const ProductosList = () => {
                             </div>
                         </div>
                     )}
-                    {/* ─────────────────────────────────────────────────────────────────────── */}
-
                 </main>
             </section>
 
@@ -304,7 +366,7 @@ const ProductosList = () => {
                 />
             )}
         </>
-    )
-}
+    );
+};
 
 export default ProductosList;

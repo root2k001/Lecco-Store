@@ -36,12 +36,15 @@ function Cabecera() {
                     <li>
                         <Link to="/Coleccion" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Lentes</Link>
                     </li>
+
+                    <li>
+                        <Link to="/Contacto" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Sale</Link>
+                    </li>
+
                     <li>
                         <Link to="/Nosotros" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Nosotros</Link>
                     </li>
-                    <li>
-                        <Link to="/Contacto" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Contacto</Link>
-                    </li>
+
                 </ul>
             </nav>
 

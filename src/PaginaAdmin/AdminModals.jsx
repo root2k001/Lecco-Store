@@ -12,6 +12,7 @@ function ProductoModal({ producto, onClose, onSave }) {
     precio: producto?.precio || '',
     stock: producto?.stock ?? 0,
     genero: producto?.genero || 'unisex',
+    color: producto?.color || '',
     descripcion: producto?.descripcion || '',
     imagen: producto?.imagen || '',
     imagenesAdicionales: producto?.imagenesAdicionales || [],
@@ -168,6 +169,7 @@ function ProductoModal({ producto, onClose, onSave }) {
           precio: parseFloat(form.precio),
           stock: parseInt(form.stock),
           genero: form.genero,
+          color: form.color.trim() || null,
           descripcion: form.descripcion.trim(),
           imagen: form.imagen.trim() || null,
           imagenesAdicionales: form.imagenesAdicionales,
@@ -241,6 +243,16 @@ function ProductoModal({ producto, onClose, onSave }) {
                 <option value="mujer">Mujer</option>
                 <option value="unisex">Unisex</option>
               </select>
+            </div>
+            <div className="admin-form-group">
+              <label>Color</label>
+              <input
+                type="text"
+                name="color"
+                value={form.color}
+                onChange={handleChange}
+                placeholder="Ej: Negro, Dorado, Carey"
+              />
             </div>
           </div>
 

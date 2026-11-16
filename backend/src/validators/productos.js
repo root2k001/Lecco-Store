@@ -11,6 +11,8 @@ export const crearProductoSchema = z.object({
     .int('El stock debe ser un número entero.')
     .min(0, 'El stock no puede ser negativo.'),
   genero: z.string().trim().max(50).optional().nullable().or(z.literal('')),
+  color: z.string().trim().max(50).optional().nullable().or(z.literal('')),
+  color: z.string().trim().max(50).optional().nullable().or(z.literal('')),
   descripcion: z.string().trim().max(2000, 'La descripción es demasiado larga.').optional().nullable().or(z.literal('')),
   imagen: z.string().trim().max(1000).optional().nullable().or(z.literal('')),
   imagenesAdicionales: z.array(z.string().trim().max(1000)).optional(),
