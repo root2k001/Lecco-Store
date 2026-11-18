@@ -4,16 +4,53 @@ import { useFavoritos } from '../../context/FavoritosContext';
 import './Productos.css';
 import DetalleProducto from '../DetallesProductos/DetallesProductos.jsx';
 
-const COLORES_DISPONIBLES = [
-    { id: 'negro', nombre: 'Negro', hex: '#111111' },
-    { id: 'marron', nombre: 'Marrón / Carey', hex: '#6d4c41' },
-    { id: 'dorado', nombre: 'Dorado', hex: '#d4af37' },
-    { id: 'plateado', nombre: 'Plateado', hex: '#b0bec5' },
-    { id: 'transparente', nombre: 'Transparente', hex: '#f8fafc', border: true },
-    { id: 'azul', nombre: 'Azul', hex: '#1e88e5' },
-    { id: 'rosa', nombre: 'Rosa / Púrpura', hex: '#d81b60' },
-    { id: 'verde', nombre: 'Verde', hex: '#2e7d32' }
-];
+// Diccionario de referencia para muestras visuales de colores habituales
+const DICCIONARIO_COLORES_HEX = {
+    negro: '#111111',
+    black: '#111111',
+    blanco: '#ffffff',
+    white: '#ffffff',
+    transparente: '#f8fafc',
+    cristal: '#f8fafc',
+    marron: '#6d4c41',
+    marrón: '#6d4c41',
+    brown: '#6d4c41',
+    carey: '#5c3a21',
+    habana: '#5c3a21',
+    tortoise: '#5c3a21',
+    ambar: '#ffbf00',
+    ámbar: '#ffbf00',
+    dorado: '#d4af37',
+    oro: '#d4af37',
+    gold: '#d4af37',
+    plateado: '#b0bec5',
+    plata: '#b0bec5',
+    silver: '#b0bec5',
+    gris: '#757575',
+    gray: '#757575',
+    grey: '#757575',
+    azul: '#1e88e5',
+    blue: '#1e88e5',
+    navy: '#0d47a1',
+    celeste: '#4fc3f7',
+    rosa: '#d81b60',
+    rosado: '#d81b60',
+    pink: '#d81b60',
+    purpura: '#8e24aa',
+    púrpura: '#8e24aa',
+    morado: '#7b1fa2',
+    violeta: '#7b1fa2',
+    rojo: '#e53935',
+    red: '#e53935',
+    verde: '#2e7d32',
+    green: '#2e7d32',
+    oliva: '#556b2f',
+    amarillo: '#fbc02d',
+    yellow: '#fbc02d',
+    naranja: '#fb8c00',
+    orange: '#fb8c00',
+    beige: '#f5f5dc'
+};
 
 const ProductosList = () => {
     const [productos, setProductos] = useState([]);
@@ -52,7 +89,7 @@ const ProductosList = () => {
                     price: Number(p.precio),
                     img: p.imagen || 'en proceso',
                     gender: p.genero,
-                    color: p.color ? String(p.color).trim().toLowerCase() : null,
+                    color: p.color ? String(p.color).trim() : null,
                     stock: p.stock,
                     quantity: p.stock,
                     descripcion: p.descripcion,
@@ -74,6 +111,34 @@ const ProductosList = () => {
         cargarProductos();
     }, [pagina]);
 
+    // Extraer automáticamente los colores únicos de los productos reales en BD
+    const coloresDisponibles = useMemo(() => {
+        const mapa = new Map();
+        productos.forEach(p => {
+            if (p.color && typeof p.color === 'string' && p.color.trim()) {
+                const clave = p.color.trim().toLowerCase();
+                if (!mapa.has(clave)) {
+                    const textoOriginal = p.color.trim();
+                    const nombreFormateado = textoOriginal.charAt(0).toUpperCase() + textoOriginal.slice(1);
+                    mapa.set(clave, {
+                        id: clave,
+                        nombre: nombreFormateado,
+                        hex: DICCIONARIO_COLORES_HEX[clave] || '#64748b',
+                        border: clave === 'blanco' || clave === 'transparente' || clave === 'cristal'
+                    });
+                }
+            }
+        });
+        return Array.from(mapa.values());
+    }, [productos]);
+
+    // Si el color seleccionado ya no existe en la lista de productos disponibles, se deselecciona
+    useEffect(() => {
+        if (colorSeleccionado && !coloresDisponibles.some(c => c.id === colorSeleccionado)) {
+            setColorSeleccionado(null);
+        }
+    }, [coloresDisponibles, colorSeleccionado]);
+
     const handleImageClick = (producto) => {
         setProductoSeleccionado(producto);
     };
@@ -85,12 +150,12 @@ const ProductosList = () => {
     const productosFiltrados = useMemo(() => {
         let resultado = [...productos];
 
-        // Filtro estricto por color designado
+        // Filtro dinámico por color
         if (colorSeleccionado) {
             const buscado = colorSeleccionado.toLowerCase().trim();
             resultado = resultado.filter(producto => {
                 if (!producto.color) return false;
-                return producto.color === buscado || producto.color.includes(buscado);
+                return producto.color.toLowerCase().trim() === buscado;
             });
         }
 
@@ -207,35 +272,40 @@ const ProductosList = () => {
                                 </div>
                             </div>
 
-                            <div className="filtro-divisor-secciones"></div>
+                            {/* Sección dinámica de colores (solo se muestra si hay productos con color) */}
+                            {coloresDisponibles.length > 0 && (
+                                <>
+                                    <div className="filtro-divisor-secciones"></div>
 
-                            <div className="filtro-seccion-colores">
-                                <span>Color:</span>
-                                <div className="opciones-color">
-                                    <button
-                                        className={`color-btn ${colorSeleccionado === null ? 'activo' : ''}`}
-                                        onClick={() => setColorSeleccionado(null)}
-                                    >
-                                        Todos
-                                    </button>
-                                    {COLORES_DISPONIBLES.map((c) => (
-                                        <button
-                                            key={c.id}
-                                            className={`color-btn ${colorSeleccionado === c.id ? 'activo' : ''}`}
-                                            onClick={() => setColorSeleccionado(colorSeleccionado === c.id ? null : c.id)}
-                                        >
-                                            <span
-                                                className="color-muestra"
-                                                style={{
-                                                    backgroundColor: c.hex,
-                                                    border: c.border ? '1px solid #d1d5db' : 'none'
-                                                }}
-                                            />
-                                            {c.nombre}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                                    <div className="filtro-seccion-colores">
+                                        <span>Color:</span>
+                                        <div className="opciones-color">
+                                            <button
+                                                className={`color-btn ${colorSeleccionado === null ? 'activo' : ''}`}
+                                                onClick={() => setColorSeleccionado(null)}
+                                            >
+                                                Todos
+                                            </button>
+                                            {coloresDisponibles.map((c) => (
+                                                <button
+                                                    key={c.id}
+                                                    className={`color-btn ${colorSeleccionado === c.id ? 'activo' : ''}`}
+                                                    onClick={() => setColorSeleccionado(colorSeleccionado === c.id ? null : c.id)}
+                                                >
+                                                    <span
+                                                        className="color-muestra"
+                                                        style={{
+                                                            backgroundColor: c.hex,
+                                                            border: c.border ? '1px solid #d1d5db' : 'none'
+                                                        }}
+                                                    />
+                                                    {c.nombre}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -282,12 +352,26 @@ const ProductosList = () => {
                                                         ▶
                                                     </div>
                                                 )}
+                                                <div className="producto-acciones">
+                                                    <button
+                                                        className='btn-agregar-carrito'
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (producto.stock > 0) {
+                                                                agregarAlCarrito(producto);
+                                                            }
+                                                        }}
+                                                        disabled={producto.stock <= 0}
+                                                    >
+                                                        {producto.stock <= 0 ? 'Sin Stock' : 'Añadir a la bolsa'}
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
 
                                         <div className='producto-info'>
                                             <div className="producto-header">
-                                                <h3 className='producto-nombre'>{producto.name}</h3>
+                                                <h3 className='producto-nombre' onClick={() => handleImageClick(producto)}>{producto.name}</h3>
                                                 <button
                                                     className={`btn-favorito ${esFavorito(producto.id) ? 'activo' : ''}`}
                                                     onClick={() => toggleFavorito(producto)}
@@ -300,22 +384,6 @@ const ProductosList = () => {
                                             </div>
 
                                             <p className='producto-precio'>S/ {producto.price.toLocaleString('es-PE')}</p>
-
-                                            <div className="producto-acciones">
-                                                <button
-                                                    className='btn-agregar-carrito'
-                                                    onClick={() => agregarAlCarrito(producto)}
-                                                    disabled={producto.stock <= 0}
-                                                >
-                                                    {producto.stock <= 0 ? 'Sin Stock' : 'Añadir a la bolsa'}
-                                                </button>
-                                                <button
-                                                    className='btn-ver-detalle'
-                                                    onClick={() => handleImageClick(producto)}
-                                                >
-                                                    Detalle
-                                                </button>
-                                            </div>
                                         </div>
                                     </div>
                                 );

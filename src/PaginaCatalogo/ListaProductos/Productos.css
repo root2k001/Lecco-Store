@@ -3,7 +3,7 @@
 .contenido {
     width: 100%;
     min-height: 100vh;
-    background-color: #f7f7f7;
+    background-color: #ffffff;
     /* Fondo ultra limpio y suave */
     padding: 5rem 5% 7rem 5%;
 }
@@ -176,6 +176,7 @@
     color: #000;
     background-color: #f9f9f9;
 }
+
 .filtro-divisor-secciones {
     height: 1px;
     background-color: #f0f0f0;
@@ -188,7 +189,7 @@
     gap: 2rem;
 }
 
-.filtro-seccion-colores > span {
+.filtro-seccion-colores>span {
     font-size: 0.9rem;
     font-weight: 600;
     color: #111;
@@ -745,4 +746,98 @@
     border-color: #111;
     font-weight: 600;
 }
-/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+/* Acciones en hover sobre la imagen */
+.producto-acciones {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(100%);
+    transition: opacity 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+        transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.producto-imagen:hover .producto-acciones,
+.producto-imagen-wrapper:hover .producto-acciones {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.btn-agregar-carrito {
+    width: 100%;
+    background-color: #111;
+    color: #fff;
+    border: none;
+    padding: 13px 16px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.25s ease, opacity 0.25s ease;
+}
+
+.btn-agregar-carrito:hover:not(:disabled) {
+    background-color: #2a2a2a;
+}
+
+.btn-agregar-carrito:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* Ajuste sutil para producto-info */
+.producto-info {
+    padding-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.producto-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.producto-precio {
+    font-size: 0.88rem;
+    color: #555;
+    margin: 0;
+    font-weight: 400;
+}
+
+.btn-favorito {
+    background: transparent;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    color: #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.25s ease;
+}
+
+.btn-favorito:hover {
+    color: #888;
+}
+
+.btn-favorito.activo {
+    color: #111;
+}
+
+.btn-favorito.activo .bookmark-icono {
+    fill: currentColor;
+}

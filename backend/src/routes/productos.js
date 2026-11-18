@@ -62,6 +62,7 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
         precio,
         imagen,
         genero,
+        color: color || null,
         stock,
         descripcion,
         imagenesAdicionales: imagenesAdicionales || [],
@@ -90,6 +91,7 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   if (precio !== undefined) data.precio = precio;
   if (imagen !== undefined) data.imagen = imagen;
   if (genero !== undefined) data.genero = genero;
+  if (color !== undefined) data.color = color || null;
   if (stock !== undefined) data.stock = stock;
   if (descripcion !== undefined) data.descripcion = descripcion;
   if (imagenesAdicionales !== undefined) data.imagenesAdicionales = imagenesAdicionales;
