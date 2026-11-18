@@ -16,7 +16,11 @@ function ProductoModal({ producto, onClose, onSave }) {
     descripcion: producto?.descripcion || '',
     imagen: producto?.imagen || '',
     imagenesAdicionales: producto?.imagenesAdicionales || [],
-    videos: producto?.videos || []
+    videos: producto?.videos || [],
+
+    // agregado recientemente  
+    coleccion: producto?.coleccion || false,
+    sale: producto?.sale || false
   });
 
   const [guardando, setGuardando] = useState(false);
@@ -29,10 +33,16 @@ function ProductoModal({ producto, onClose, onSave }) {
   const [modoUrl, setModoUrl] = useState(false);
   const inputFileRef = useRef(null);
 
+
+  //deteccion automatica de tipo de input 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
+
 
   // --- Subir archivo a Cloudinary vía /api/upload ---
   const subirArchivo = async (file) => {
@@ -173,7 +183,13 @@ function ProductoModal({ producto, onClose, onSave }) {
           descripcion: form.descripcion.trim(),
           imagen: form.imagen.trim() || null,
           imagenesAdicionales: form.imagenesAdicionales,
-          videos: form.videos
+          videos: form.videos,
+
+          coleccion: form.coleccion,
+          sale: form.sale
+
+
+
         })
       });
 
@@ -254,6 +270,32 @@ function ProductoModal({ producto, onClose, onSave }) {
                 placeholder="Ej: Negro, Dorado, Carey"
               />
             </div>
+
+            <div className="admin-form-group">
+
+              <input
+                type="checkbox"
+                name="coleccion"
+                checked={form.coleccion}
+                onChange={handleChange}
+              />
+              <label >coleccion</label>
+            </div>
+
+            <div className="admin-form-group" >
+              <input
+                type="checkbox"
+                name="sale"
+                checked={form.sale}
+                onChange={handleChange}
+
+              />
+              <label >Sale</label>
+
+            </div>
+
+
+
           </div>
 
           {/* ===== ZONA DE IMAGEN ===== */}

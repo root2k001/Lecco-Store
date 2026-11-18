@@ -15,7 +15,12 @@ export const crearProductoSchema = z.object({
   descripcion: z.string().trim().max(2000, 'La descripción es demasiado larga.').optional().nullable().or(z.literal('')),
   imagen: z.string().trim().max(1000).optional().nullable().or(z.literal('')),
   imagenesAdicionales: z.array(z.string().trim().max(1000)).optional(),
-  videos: z.array(z.string().trim().max(1000)).optional()
+  videos: z.array(z.string().trim().max(1000)).optional(),
+
+  coleccion: z.boolean().optional(),
+  sale: z.boolean().optional()
+
+
 });
 
 export const actualizarProductoSchema = z.object({
@@ -27,5 +32,9 @@ export const actualizarProductoSchema = z.object({
   descripcion: z.string().trim().max(2000).optional().nullable().or(z.literal('')),
   imagen: z.string().trim().max(1000).optional().nullable().or(z.literal('')),
   imagenesAdicionales: z.array(z.string().trim().max(1000)).optional(),
-  videos: z.array(z.string().trim().max(1000)).optional()
+  videos: z.array(z.string().trim().max(1000)).optional(),
+
+  coleccion: z.boolean().optional(),
+  sale: z.boolean().optional()
+
 });

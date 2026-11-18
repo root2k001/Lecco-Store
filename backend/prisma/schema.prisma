@@ -42,6 +42,8 @@ model Producto {
   videos              String[]     @default([])
   creadoEn            DateTime     @default(now())
   items               ItemPedido[]
+  coleccion Boolean @default(false)
+  sale      Boolean @default(false)
 }
 
 model Pedido {
@@ -67,6 +69,8 @@ model ItemPedido {
   cantidad   Int
   precioUnit Decimal  @db.Decimal(10, 2)
   color      String?
+
+
 }
 
 model HistorialCambios {
