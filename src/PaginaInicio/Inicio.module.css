@@ -408,3 +408,189 @@
     width: 100%;
   }
 }
+
+
+/* ==========================================================================
+9. SECCIÓN CARRUSEL DE PRODUCTOS (ESTILO FULL-BLEED)
+   ========================================================================== */
+.seccion-coleccion {
+  width: 100%;
+  padding: 20px 0;
+}
+
+.encabezado-coleccion {
+  justify-content: space-between;
+  align-items: flex-end;
+  margin: 0 auto 30px;
+  padding: 0 1%;
+}
+
+.titulo-coleccion {
+  font-size: 2.2rem;
+  font-weight: 400;
+  color: var(--color-primary);
+  letter-spacing: 1px;
+  margin: 0;
+}
+
+.enlace-ver-todo {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-primary);
+  padding-bottom: 2px;
+  transition: opacity 0.25s ease;
+}
+
+.enlace-ver-todo:hover {
+  opacity: 0.7;
+}
+
+.contenedor-carrusel {
+  position: relative;
+  width: 100%;
+}
+
+.pista-carrusel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  border-top: 1px solid #e6e6e6;
+  border-bottom: 1px solid #e6e6e6;
+  cursor: grab;
+  user-select: none;
+
+  margin: 20px;
+}
+
+
+.pista-carrusel::-webkit-scrollbar {
+  display: none;
+}
+
+.pista-carrusel.arrastrando {
+  cursor: grabbing;
+  scroll-behavior: auto;
+  scroll-snap-type: none;
+}
+
+.tarjeta-coleccion {
+  position: relative;
+  flex: 0 0 24vw;
+  min-width: 260px;
+  aspect-ratio: 1 / 1;
+  background-color: #f7f7f7;
+  border-right: 1px solid #e6e6e6;
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Centra las tarjetas cuando son pocas (1 a 4) y se desactiva solo al haber scroll */
+.tarjeta-coleccion:first-child {
+  margin-left: auto;
+  border-left: 1px solid #e6e6e6;
+}
+
+.tarjeta-coleccion:last-child {
+  margin-right: auto;
+}
+
+
+.tarjeta-coleccion,
+.contenedor-imagen-coleccion img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+.contenedor-imagen-coleccion {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0%;
+}
+
+.contenedor-imagen-coleccion img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tarjeta-coleccion:hover .contenedor-imagen-coleccion img {
+  transform: scale(1.05);
+}
+
+.marcador-imagen {
+  font-size: 2.5rem;
+}
+
+.info-coleccion {
+  position: absolute;
+  bottom: 20px;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.info-coleccion h4 {
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.info-coleccion span {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.tarjeta-coleccion:hover .info-coleccion span {
+  opacity: 1;
+}
+
+.esqueleto-celda {
+  width: 100%;
+  height: 100%;
+  background-color: #efefef;
+  animation: pulsoEsqueleto 1.5s infinite ease-in-out;
+}
+
+@keyframes pulsoEsqueleto {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .tarjeta-coleccion {
+    flex: 0 0 72vw;
+  }
+
+  .info-coleccion span {
+    opacity: 1;
+  }
+}

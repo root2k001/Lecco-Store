@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Cabecera from '../Compartidos/cabecera/cabecera';
 import PiePagina from '../Compartidos/footer/Footer';
@@ -34,29 +34,162 @@ function CategoriaCarrusel({ imagenes, fallbackClass }) {
   );
 }
 
+function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Coleccion' }) {
+  const pistaCarruselRef = useRef(null);
+  const [arrastrando, setArrastrando] = useState(false);
+  const estadoArrastre = useRef({
+    activo: false,
+    inicioX: 0,
+    scrollInicial: 0,
+    seMovio: false,
+  });
+
+  const manejarMouseDown = (e) => {
+    const pista = pistaCarruselRef.current;
+    if (!pista) return;
+
+    estadoArrastre.current = {
+      activo: true,
+      inicioX: e.pageX - pista.offsetLeft,
+      scrollInicial: pista.scrollLeft,
+      seMovio: false,
+    };
+    setArrastrando(true);
+  };
+
+  const manejarMouseMove = (e) => {
+    if (!estadoArrastre.current.activo) return;
+    const pista = pistaCarruselRef.current;
+    if (!pista) return;
+
+    e.preventDefault();
+    const x = e.pageX - pista.offsetLeft;
+    const distancia = x - estadoArrastre.current.inicioX;
+
+    // Si se desplazó más de 5px, se considera arrastre y no un clic normal
+    if (Math.abs(distancia) > 5) {
+      estadoArrastre.current.seMovio = true;
+    }
+
+    pista.scrollLeft = estadoArrastre.current.scrollInicial - distancia * 1.2;
+  };
+
+  const detenerArrastre = () => {
+    if (!estadoArrastre.current.activo) return;
+    estadoArrastre.current.activo = false;
+    setArrastrando(false);
+  };
+
+  // Evita que el <Link> redirija si el usuario estaba arrastrando
+  const manejarClickCaptura = (e) => {
+    if (estadoArrastre.current.seMovio) {
+      e.preventDefault();
+      e.stopPropagation();
+      estadoArrastre.current.seMovio = false;
+    }
+  };
+
+  if (!loading && (!productos || productos.length === 0)) return null;
+
+  return (
+    <section className={styles['seccion-coleccion']}>
+      <div className={styles['encabezado-coleccion']}>
+        <h2 className={styles['titulo-coleccion']}>{titulo}</h2>
+        <Link to={enlaceRuta} className={styles['enlace-ver-todo']}>
+          Ver todos
+        </Link>
+      </div>
+
+      <div className={styles['contenedor-carrusel']}>
+        {loading ? (
+          <div className={styles['pista-carrusel']}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className={styles['tarjeta-coleccion']}>
+                <div className={styles['esqueleto-celda']} />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div
+            ref={pistaCarruselRef}
+            onMouseDown={manejarMouseDown}
+            onMouseMove={manejarMouseMove}
+            onMouseUp={detenerArrastre}
+            onMouseLeave={detenerArrastre}
+            onClickCapture={manejarClickCaptura}
+            className={`${styles['pista-carrusel']} ${arrastrando ? styles['arrastrando'] : ''
+              }`}
+          >
+            {productos.map((prod) => (
+              <Link
+                to={enlaceRuta}
+                key={prod.id}
+                draggable={false}
+                className={styles['tarjeta-coleccion']}
+              >
+                <div className={styles['contenedor-imagen-coleccion']}>
+                  {prod.imagen && prod.imagen !== 'en proceso' ? (
+                    <img
+                      src={prod.imagen}
+                      alt={prod.nombre}
+                      loading="lazy"
+                      draggable={false}
+                    />
+                  ) : (
+                    <div className={styles['marcador-imagen']}>👓</div>
+                  )}
+                </div>
+
+                <div className={styles['info-coleccion']}>
+                  <h4>{prod.nombre}</h4>
+                  <span>S/ {Number(prod.precio).toLocaleString('es-PE')}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function Inicio() {
   const [productosDestacados, setProductosDestacados] = useState([]);
   const [todosLosProductos, setTodosLosProductos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [productosColeccion, setProductosColeccion] = useState([]);
+  const [productosSale, setProductosSale] = useState([]);
 
   useEffect(() => {
-    const fetchDestacados = async () => {
+    const fetchProductos = async () => {
       try {
-        const res = await fetch('/api/productos?page=1&limit=50');
-        const data = await res.json();
-        // La API ahora devuelve { productos, total, ... }
-        const lista = data.productos || data;
+        const [resGeneral, resColeccion, resSale] = await Promise.all([
+          fetch('/api/productos?page=1&limit=50'),
+          fetch('/api/productos?coleccion=true&page=1&limit=20'),
+          fetch('/api/productos?sale=true&page=1&limit=20')
+        ]);
+
+        const dataGeneral = await resGeneral.json();
+        const lista = dataGeneral.productos || dataGeneral;
         setTodosLosProductos(lista);
-        // Tomamos 4 productos como destacados
-        setProductosDestacados(lista.slice(0, 4));
+
+        // 12 productos para que el carrusel de Nuevos Ingresos tenga recorrido horizontal
+        setProductosDestacados(lista.slice(0, 12));
+
+        const dataColeccion = await resColeccion.json();
+        setProductosColeccion(dataColeccion.productos || dataColeccion);
+
+        const dataSale = await resSale.json();
+        setProductosSale(dataSale.productos || dataSale);
       } catch (err) {
-        console.error('Error cargando destacados', err);
+        console.error('Error cargando productos', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchDestacados();
+    fetchProductos();
   }, []);
+
 
   return (
     <div className={`${styles['inicio-pagina'] || 'inicio-pagina'}`}>
@@ -73,11 +206,8 @@ function Inicio() {
         </div>
       </section>
 
-
-
       {/* CATEGORIES SECTION 
       PENDIENTE REVISAR  CODIGO ULTIMA MODIFICACION 12/11/26
-     
       */}
       <section className={`${styles['categorias-section'] || 'categorias-section'}`}>
         <h2 className={`${styles['section-title'] || 'section-title'}`}>Encuentra tu estilo</h2>
@@ -112,51 +242,27 @@ function Inicio() {
         </div>
       </section>
 
-      {/* DESTACADOS SECTION */}
-      <section className={`${styles['destacados-section'] || 'destacados-section'}`}>
-        <div className={`${styles['destacados-header'] || 'destacados-header'}`}>
-          <h2 className={`${styles['section-title'] || 'section-title'}`}>Nuevos Ingresos</h2>
-          <Link to="/Coleccion" className={`${styles['link-ver-todo'] || 'link-ver-todo'}`}>Ver todos</Link>
-        </div>
 
-        {loading ? (
-          <div className={`${styles['destacados-grid'] || 'destacados-grid'} ${styles['skeleton-grid'] || 'skeleton-grid'}`}>
-            {[1, 2, 3, 4].map(i => (
-              <div key={i} className={`${styles['producto-skeleton'] || 'producto-skeleton'}`}>
-                <div className={`${styles['skeleton-imagen'] || 'skeleton-imagen'}`}></div>
-                <div className={`${styles['skeleton-texto'] || 'skeleton-texto'}`}></div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className={`${styles['destacados-grid'] || 'destacados-grid'}`}>
-            {productosDestacados.map(prod => (
-              <Link to="/Coleccion" key={prod.id} className={`${styles['destacado-card'] || 'destacado-card'}`}>
-                <div className={`${styles['destacado-img-wrapper'] || 'destacado-img-wrapper'}`}>
-                  {prod.imagen && prod.imagen !== 'en proceso' ? (
-                    <img src={prod.imagen} alt={prod.nombre} />
-                  ) : (
-                    <div className={`${styles['imagen-placeholder'] || 'imagen-placeholder'}`}>👓</div>
-                  )}
-                </div>
-                <div className={`${styles['destacado-info'] || 'destacado-info'}`}>
-                  <h4>{prod.nombre}</h4>
-                  <p>S/ {Number(prod.precio).toLocaleString('es-PE')}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </section>
+      {/* CARRUSEL NUEVOS INGRESOS */}
+      <CarruselProductos
+        titulo="Nuevos Ingresos"
+        productos={productosDestacados}
+        loading={loading}
+      />
 
-      <section>
+      {/* CARRUSEL COLECCIÓN */}
+      <CarruselProductos
+        titulo="Colección"
+        productos={productosColeccion}
+        loading={loading}
+      />
 
-
-
-
-      </section>
-
-
+      {/* CARRUSEL SALE */}
+      <CarruselProductos
+        titulo="Sale"
+        productos={productosSale}
+        loading={loading}
+      />
 
       <PiePagina />
     </div>
