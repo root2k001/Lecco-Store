@@ -5,16 +5,37 @@ import { crearProductoSchema, actualizarProductoSchema } from '../validators/pro
 
 const router = Router();
 
-// Obtener todos los productos con paginación (Público)
+// Obtener todos los productos con paginación y filtros opcionales (Público)
 router.get('/', async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
   const limit = Math.min(50, parseInt(req.query.limit) || 12); // máx 50 por página
   const skip = (page - 1) * limit;
 
+  const where = {};
+
+  // Filtro opcional ?coleccion=true o ?coleccion=false
+  if (req.query.coleccion === 'true') {
+    where.coleccion = true;
+  } else if (req.query.coleccion === 'false') {
+    where.coleccion = false;
+  }
+
+  // Filtro opcional ?sale=true o ?sale=false
+  if (req.query.sale === 'true') {
+    where.sale = true;
+  } else if (req.query.sale === 'false') {
+    where.sale = false;
+  }
+
   try {
     const [productos, total] = await Promise.all([
-      prisma.producto.findMany({ skip, take: limit, orderBy: { creadoEn: 'desc' } }),
-      prisma.producto.count()
+      prisma.producto.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { creadoEn: 'desc' }
+      }),
+      prisma.producto.count({ where })
     ]);
     res.json({
       productos,
