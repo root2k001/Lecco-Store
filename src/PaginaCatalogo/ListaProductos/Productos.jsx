@@ -11,6 +11,7 @@ const DICCIONARIO_COLORES_HEX = {
     blanco: '#ffffff',
     white: '#ffffff',
     transparente: '#f8fafc',
+    transparentes: '#f8fafc',
     cristal: '#f8fafc',
     marron: '#6d4c41',
     marrón: '#6d4c41',
@@ -54,6 +55,7 @@ const DICCIONARIO_COLORES_HEX = {
 
 const ProductosList = () => {
     const [productos, setProductos] = useState([]);
+    const [coloresBD, setColoresBD] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
@@ -61,22 +63,50 @@ const ProductosList = () => {
     const [colorSeleccionado, setColorSeleccionado] = useState(null);
     const [mostrarFiltrosMenu, setMostrarFiltrosMenu] = useState(false);
 
-    // ── Paginación ──────────────────────────────────────────────────────────────
+    // ── Paginación (16 productos por página) ───────────────────────────────────
     const [pagina, setPagina] = useState(1);
     const [totalPaginas, setTotalPaginas] = useState(1);
     const [totalProductos, setTotalProductos] = useState(0);
-    const ITEMS_POR_PAGINA = 12;
+    const ITEMS_POR_PAGINA = 16;
     // ───────────────────────────────────────────────────────────────────────────
 
     const { agregarAlCarrito } = useCarrito();
     const { toggleFavorito, esFavorito } = useFavoritos();
 
+    // Cargar todos los colores únicos existentes en la BD una sola vez
+    useEffect(() => {
+        const cargarColores = async () => {
+            try {
+                const res = await fetch('/api/productos/colores');
+                if (res.ok) {
+                    const listaColores = await res.json();
+                    setColoresBD(listaColores);
+                }
+            } catch (err) {
+                console.error('Error cargando lista de colores:', err);
+            }
+        };
+        cargarColores();
+    }, []);
+
+    // Cargar productos paginados, filtrados y ordenados desde el servidor
     useEffect(() => {
         const cargarProductos = async () => {
             try {
                 setLoading(true);
                 setError(null);
-                const response = await fetch(`/api/productos?page=${pagina}&limit=${ITEMS_POR_PAGINA}`);
+
+                const params = new URLSearchParams({
+                    page: String(pagina),
+                    limit: String(ITEMS_POR_PAGINA),
+                    orden
+                });
+
+                if (colorSeleccionado) {
+                    params.append('color', colorSeleccionado);
+                }
+
+                const response = await fetch(`/api/productos?${params.toString()}`);
 
                 if (!response.ok) {
                     throw new Error('Error al cargar los productos desde el servidor');
@@ -96,7 +126,9 @@ const ProductosList = () => {
                     imagenesAdicionales: p.imagenesAdicionales || [],
                     videos: p.videos || []
                 }));
+
                 setProductos(productosMapeados);
+
                 if (data.totalPages !== undefined) {
                     setTotalPaginas(data.totalPages);
                     setTotalProductos(data.total);
@@ -109,35 +141,39 @@ const ProductosList = () => {
         };
 
         cargarProductos();
-    }, [pagina]);
+    }, [pagina, colorSeleccionado, orden]);
 
-    // Extraer automáticamente los colores únicos de los productos reales en BD
+    // Formatear colores únicos sin duplicar por mayúsculas/minúsculas
     const coloresDisponibles = useMemo(() => {
         const mapa = new Map();
-        productos.forEach(p => {
-            if (p.color && typeof p.color === 'string' && p.color.trim()) {
-                const clave = p.color.trim().toLowerCase();
+        coloresBD.forEach(c => {
+            if (c && typeof c === 'string' && c.trim()) {
+                const clave = c.trim().toLowerCase();
                 if (!mapa.has(clave)) {
-                    const textoOriginal = p.color.trim();
-                    const nombreFormateado = textoOriginal.charAt(0).toUpperCase() + textoOriginal.slice(1);
+                    const textoOriginal = c.trim();
+                    const nombreFormateado = textoOriginal.charAt(0).toUpperCase() + textoOriginal.slice(1).toLowerCase();
                     mapa.set(clave, {
                         id: clave,
                         nombre: nombreFormateado,
                         hex: DICCIONARIO_COLORES_HEX[clave] || '#64748b',
-                        border: clave === 'blanco' || clave === 'transparente' || clave === 'cristal'
+                        border: clave === 'blanco' || clave === 'transparente' || clave === 'transparentes' || clave === 'cristal'
                     });
                 }
             }
         });
         return Array.from(mapa.values());
-    }, [productos]);
+    }, [coloresBD]);
 
-    // Si el color seleccionado ya no existe en la lista de productos disponibles, se deselecciona
-    useEffect(() => {
-        if (colorSeleccionado && !coloresDisponibles.some(c => c.id === colorSeleccionado)) {
-            setColorSeleccionado(null);
-        }
-    }, [coloresDisponibles, colorSeleccionado]);
+    // Handlers que reinician la paginación a la página 1 al filtrar u ordenar
+    const manejarCambioOrden = (nuevoOrden) => {
+        setOrden(nuevoOrden);
+        setPagina(1);
+    };
+
+    const manejarSeleccionColor = (nuevoColorId) => {
+        setColorSeleccionado(prev => (prev === nuevoColorId ? null : nuevoColorId));
+        setPagina(1);
+    };
 
     const handleImageClick = (producto) => {
         setProductoSeleccionado(producto);
@@ -146,28 +182,6 @@ const ProductosList = () => {
     const handleCerrarModal = () => {
         setProductoSeleccionado(null);
     };
-
-    const productosFiltrados = useMemo(() => {
-        let resultado = [...productos];
-
-        // Filtro dinámico por color
-        if (colorSeleccionado) {
-            const buscado = colorSeleccionado.toLowerCase().trim();
-            resultado = resultado.filter(producto => {
-                if (!producto.color) return false;
-                return producto.color.toLowerCase().trim() === buscado;
-            });
-        }
-
-        // Ordenamiento por precio
-        if (orden === 'menor_mayor') {
-            resultado = [...resultado].sort((a, b) => a.price - b.price);
-        } else if (orden === 'mayor_menor') {
-            resultado = [...resultado].sort((a, b) => b.price - a.price);
-        }
-
-        return resultado;
-    }, [colorSeleccionado, orden, productos]);
 
     if (loading) {
         return (
@@ -253,26 +267,26 @@ const ProductosList = () => {
                                 <div className="opciones-orden">
                                     <button
                                         className={`orden-btn ${orden === 'relevante' ? 'activo' : ''}`}
-                                        onClick={() => setOrden('relevante')}
+                                        onClick={() => manejarCambioOrden('relevante')}
                                     >
                                         Relevante
                                     </button>
                                     <button
                                         className={`orden-btn ${orden === 'menor_mayor' ? 'activo' : ''}`}
-                                        onClick={() => setOrden('menor_mayor')}
+                                        onClick={() => manejarCambioOrden('menor_mayor')}
                                     >
                                         Precio: Menor a Mayor
                                     </button>
                                     <button
                                         className={`orden-btn ${orden === 'mayor_menor' ? 'activo' : ''}`}
-                                        onClick={() => setOrden('mayor_menor')}
+                                        onClick={() => manejarCambioOrden('mayor_menor')}
                                     >
                                         Precio: Mayor a Menor
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Sección dinámica de colores (solo se muestra si hay productos con color) */}
+                            {/* Sección dinámica de colores */}
                             {coloresDisponibles.length > 0 && (
                                 <>
                                     <div className="filtro-divisor-secciones"></div>
@@ -282,7 +296,7 @@ const ProductosList = () => {
                                         <div className="opciones-color">
                                             <button
                                                 className={`color-btn ${colorSeleccionado === null ? 'activo' : ''}`}
-                                                onClick={() => setColorSeleccionado(null)}
+                                                onClick={() => { setColorSeleccionado(null); setPagina(1); }}
                                             >
                                                 Todos
                                             </button>
@@ -290,7 +304,7 @@ const ProductosList = () => {
                                                 <button
                                                     key={c.id}
                                                     className={`color-btn ${colorSeleccionado === c.id ? 'activo' : ''}`}
-                                                    onClick={() => setColorSeleccionado(colorSeleccionado === c.id ? null : c.id)}
+                                                    onClick={() => manejarSeleccionColor(c.id)}
                                                 >
                                                     <span
                                                         className="color-muestra"
@@ -310,19 +324,19 @@ const ProductosList = () => {
                     )}
 
                     <div className="productos">
-                        {productosFiltrados.length === 0 ? (
+                        {productos.length === 0 ? (
                             <div className="no-resultados">
                                 <span>🔍</span>
                                 <p>No se encontraron productos con el color seleccionado</p>
                                 <button
                                     className="btn-limpiar-filtros"
-                                    onClick={() => setColorSeleccionado(null)}
+                                    onClick={() => { setColorSeleccionado(null); setPagina(1); }}
                                 >
                                     Ver todos los colores
                                 </button>
                             </div>
                         ) : (
-                            productosFiltrados.map((producto) => {
+                            productos.map((producto) => {
                                 return (
                                     <div className='producto-carta' key={producto.id}>
                                         <div className='producto-imagen-wrapper'>
@@ -438,3 +452,4 @@ const ProductosList = () => {
 };
 
 export default ProductosList;
+

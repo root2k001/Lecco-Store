@@ -5,10 +5,36 @@ import { crearProductoSchema, actualizarProductoSchema } from '../validators/pro
 
 const router = Router();
 
-// Obtener todos los productos con paginación y filtros opcionales (Público)
+// Obtener colores únicos disponibles en la BD (para los botones de filtro)
+router.get('/colores', async (req, res) => {
+  try {
+    const productosConColor = await prisma.producto.findMany({
+      where: {
+        color: { not: null },
+      },
+      select: { color: true },
+      distinct: ['color'],
+    });
+
+    const coloresUnicos = [
+      ...new Set(
+        productosConColor
+          .map((p) => p.color?.trim())
+          .filter(Boolean)
+      ),
+    ];
+
+    res.json(coloresUnicos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener los colores' });
+  }
+});
+
+// Obtener todos los productos con paginación, filtros y ordenamiento (Público)
 router.get('/', async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(50, parseInt(req.query.limit) || 12); // máx 50 por página
+  const limit = Math.min(50, parseInt(req.query.limit) || 16); // 16 por defecto
   const skip = (page - 1) * limit;
 
   const where = {};
@@ -26,11 +52,28 @@ router.get('/', async (req, res) => {
   } else if (req.query.sale === 'false') {
     where.sale = false;
   }
-  //FILTRO Nuevoingreso
+
+  // Filtro opcional ?nuevosingresos=true o ?nuevosingresos=false
   if (req.query.nuevosingresos === 'true') {
     where.nuevosingresos = true;
   } else if (req.query.nuevosingresos === 'false') {
     where.nuevosingresos = false;
+  }
+
+  // Filtro por color desde la base de datos (insensible a mayúsculas/minúsculas)
+  if (req.query.color && req.query.color.trim() !== '') {
+    where.color = {
+      equals: req.query.color.trim(),
+      mode: 'insensitive',
+    };
+  }
+
+  // Ordenamiento desde la base de datos
+  let orderBy = { creadoEn: 'desc' }; // 'relevante' por defecto
+  if (req.query.orden === 'menor_mayor') {
+    orderBy = { precio: 'asc' };
+  } else if (req.query.orden === 'mayor_menor') {
+    orderBy = { precio: 'desc' };
   }
 
   try {
@@ -39,16 +82,17 @@ router.get('/', async (req, res) => {
         where,
         skip,
         take: limit,
-        orderBy: { creadoEn: 'desc' }
+        orderBy,
       }),
-      prisma.producto.count({ where })
+      prisma.producto.count({ where }),
     ]);
+
     res.json({
       productos,
       total,
       page,
       totalPages: Math.ceil(total / limit),
-      limit
+      limit,
     });
   } catch (error) {
     console.error(error);
