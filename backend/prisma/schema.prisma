@@ -40,10 +40,12 @@ model Producto {
   colores             String[]     @default([])
   imagenesAdicionales String[]     @default([])
   videos              String[]     @default([])
+  coleccion           Boolean      @default(false)
+  sale                Boolean      @default(false)
+  nuevosingresos      Boolean  @default(false)
   creadoEn            DateTime     @default(now())
   items               ItemPedido[]
-  coleccion Boolean @default(false)
-  sale      Boolean @default(false)
+ 
 }
 
 model Pedido {

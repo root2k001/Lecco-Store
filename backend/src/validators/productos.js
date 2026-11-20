@@ -18,7 +18,8 @@ export const crearProductoSchema = z.object({
   videos: z.array(z.string().trim().max(1000)).optional(),
 
   coleccion: z.boolean().optional(),
-  sale: z.boolean().optional()
+  sale: z.boolean().optional(),
+  nuevosingresos: z.boolean().optional(),
 
 
 });
@@ -35,6 +36,7 @@ export const actualizarProductoSchema = z.object({
   videos: z.array(z.string().trim().max(1000)).optional(),
 
   coleccion: z.boolean().optional(),
-  sale: z.boolean().optional()
+  sale: z.boolean().optional(),
+  nuevosingresos: z.boolean().optional(),
 
 });

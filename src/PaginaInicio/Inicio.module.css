@@ -459,8 +459,6 @@
   scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   scrollbar-width: none;
-  border-top: 1px solid #e6e6e6;
-  border-bottom: 1px solid #e6e6e6;
   cursor: grab;
   user-select: none;
 
@@ -480,11 +478,10 @@
 
 .tarjeta-coleccion {
   position: relative;
-  flex: 0 0 24vw;
+  flex: 0 0 17.5vw;
   min-width: 260px;
   aspect-ratio: 1 / 1;
-  background-color: #f7f7f7;
-  border-right: 1px solid #e6e6e6;
+  background-color: #ffffff;
   scroll-snap-align: start;
   text-decoration: none;
   color: inherit;
@@ -497,7 +494,7 @@
 /* Centra las tarjetas cuando son pocas (1 a 4) y se desactiva solo al haber scroll */
 .tarjeta-coleccion:first-child {
   margin-left: auto;
-  border-left: 1px solid #e6e6e6;
+
 }
 
 .tarjeta-coleccion:last-child {

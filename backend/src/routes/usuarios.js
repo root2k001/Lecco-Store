@@ -107,7 +107,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     // Generar Refresh Token UUID y guardar en BD
     const refreshTokenId = crypto.randomUUID();
-    
+
     await prisma.refreshToken.create({
       data: {
         token: refreshTokenId,
@@ -131,6 +131,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 });
 
 // Refrescar token
+// Refrescar token
 router.post('/refresh', async (req, res) => {
   const { refreshToken } = req.cookies;
 
@@ -145,14 +146,13 @@ router.post('/refresh', async (req, res) => {
     });
 
     if (!storedToken) {
-      // Si usan un token inválido, limpiamos cookies como precaución
       res.clearCookie('accessToken');
       res.clearCookie('refreshToken', { path: '/api/usuarios/refresh' });
       return res.status(403).json({ error: 'Refresh token inválido' });
     }
 
     if (new Date() > storedToken.expiraEn) {
-      await prisma.refreshToken.delete({ where: { id: storedToken.id } });
+      await prisma.refreshToken.deleteMany({ where: { id: storedToken.id } });
       res.clearCookie('accessToken');
       res.clearCookie('refreshToken', { path: '/api/usuarios/refresh' });
       return res.status(403).json({ error: 'Refresh token expirado' });
@@ -167,9 +167,9 @@ router.post('/refresh', async (req, res) => {
 
     const newRefreshTokenId = crypto.randomUUID();
 
-    // Actualizar en la base de datos
+    // Actualizar en la base de datos de forma segura sin lanzar P2025
     await prisma.$transaction([
-      prisma.refreshToken.delete({ where: { id: storedToken.id } }),
+      prisma.refreshToken.deleteMany({ where: { id: storedToken.id } }),
       prisma.refreshToken.create({
         data: {
           token: newRefreshTokenId,
@@ -188,6 +188,7 @@ router.post('/refresh', async (req, res) => {
     res.status(500).json({ error: 'Hubo un error al renovar el token' });
   }
 });
+
 
 // Obtener datos del usuario logueado (basado en Cookie)
 router.get('/me', verifyToken, async (req, res) => {
@@ -211,7 +212,7 @@ router.get('/me', verifyToken, async (req, res) => {
 // Cerrar sesión
 router.post('/logout', async (req, res) => {
   const { refreshToken } = req.cookies;
-  
+
   if (refreshToken) {
     try {
       await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
@@ -237,7 +238,7 @@ router.put('/perfil', verifyToken, async (req, res) => {
 
     const { nombre, email, password } = result.data;
     const dataToUpdate = {};
-    
+
     if (nombre) dataToUpdate.nombre = nombre;
     if (email) dataToUpdate.email = email;
 

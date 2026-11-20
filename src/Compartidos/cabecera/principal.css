@@ -44,8 +44,8 @@
 
 .logo {
   font-family: var(--font-cabecera);
-  font-size: 1.85rem;
-  font-weight: 800;
+  font-size: 3rem;
+  font-weight: 200;
 
   letter-spacing: 5px;
   color: var(--color-primary);

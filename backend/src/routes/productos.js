@@ -26,6 +26,12 @@ router.get('/', async (req, res) => {
   } else if (req.query.sale === 'false') {
     where.sale = false;
   }
+  //FILTRO Nuevoingreso
+  if (req.query.nuevosingresos === 'true') {
+    where.nuevosingresos = true;
+  } else if (req.query.nuevosingresos === 'false') {
+    where.nuevosingresos = false;
+  }
 
   try {
     const [productos, total] = await Promise.all([
@@ -78,7 +84,7 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
 
 
   // se añade en la constante  coleccion y sale 
-  const { nombre, precio, imagen, genero, color, stock, descripcion, imagenesAdicionales, videos, coleccion, sale } = validacion.data;
+  const { nombre, precio, imagen, genero, color, stock, descripcion, imagenesAdicionales, videos, coleccion, sale, nuevosingresos } = validacion.data;
   try {
     const nuevoProducto = await prisma.producto.create({
       data: {
@@ -94,7 +100,9 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
 
         // se agrega al objeto que se guarda en la BD
         coleccion: coleccion ?? false,
-        sale: sale ?? false
+        sale: sale ?? false,
+        nuevosingresos: nuevosingresos ?? false,
+
       }
     });
     res.status(201).json(nuevoProducto);
@@ -113,7 +121,7 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   if (!validacion.success) {
     return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de actualización inválidos' });
   }
-  const { nombre, precio, imagen, genero, color, stock, descripcion, imagenesAdicionales, videos, coleccion, sale } = validacion.data;
+  const { nombre, precio, imagen, genero, color, stock, descripcion, imagenesAdicionales, videos, coleccion, sale, nuevosingresos } = validacion.data;
   const data = {};
   if (nombre !== undefined) data.nombre = nombre;
   if (precio !== undefined) data.precio = precio;
@@ -128,7 +136,7 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   // se incluye si vienen definidos en la peticion 
   if (coleccion !== undefined) data.coleccion = coleccion;
   if (sale !== undefined) data.sale = sale;
-
+  if (nuevosingresos !== undefined) data.nuevosingresos = nuevosingresos;
   try {
     const productoPrevio = await prisma.producto.findUnique({
       where: { id: parseInt(id) }

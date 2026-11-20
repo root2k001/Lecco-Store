@@ -98,6 +98,7 @@ function AdminProductos({ productos, onReload }) {
               <th>Precio</th>
               <th>Género</th>
               <th>Stock</th>
+              <th>Tipo</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -145,6 +146,16 @@ function AdminProductos({ productos, onReload }) {
                     )}
                   </div>
                 </td>
+
+                <td>
+                  {producto.sale
+                    ? 'Sale'
+                    : producto.coleccion
+                      ? 'Colección'
+                      : producto.nuevosingresos
+                        ? 'Nuevos ingresos'
+                        : 'General'}
+                </td>
                 <td>
                   <div className="acciones-btns">
                     <button
@@ -169,6 +180,8 @@ function AdminProductos({ productos, onReload }) {
                     </button>
                   </div>
                 </td>
+
+
               </tr>
             ))}
           </tbody>

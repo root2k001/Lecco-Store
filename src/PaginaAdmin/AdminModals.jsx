@@ -20,7 +20,10 @@ function ProductoModal({ producto, onClose, onSave }) {
 
     // agregado recientemente  
     coleccion: producto?.coleccion || false,
-    sale: producto?.sale || false
+    sale: producto?.sale || false,
+    nuevosingresos: producto?.nuevosingresos ?? false,
+
+
   });
 
   const [guardando, setGuardando] = useState(false);
@@ -186,8 +189,8 @@ function ProductoModal({ producto, onClose, onSave }) {
           videos: form.videos,
 
           coleccion: form.coleccion,
-          sale: form.sale
-
+          sale: form.sale,
+          nuevosingresos: Boolean(form.nuevosingresos),
 
 
         })
@@ -294,9 +297,19 @@ function ProductoModal({ producto, onClose, onSave }) {
 
             </div>
 
-
+            <div className="admin-form-group">
+              <input
+                type="checkbox"
+                id="chk-nuevos-ingresos"
+                name="nuevosingresos"
+                checked={form.nuevosingresos}
+                onChange={handleChange}
+              />
+              <label htmlFor="chk-nuevos-ingresos">Nuevos ingresos</label>
+            </div>
 
           </div>
+
 
           {/* ===== ZONA DE IMAGEN ===== */}
           <div className="admin-form-group">

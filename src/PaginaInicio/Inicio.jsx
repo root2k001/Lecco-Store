@@ -4,6 +4,17 @@ import Cabecera from '../Compartidos/cabecera/cabecera';
 import PiePagina from '../Compartidos/footer/Footer';
 import styles from './Inicio.module.css';
 
+
+const obtenerImagenesValidas = (lista, predicado) => {
+  if (!Array.isArray(lista)) return [];
+  return lista
+    .filter((p) => predicado(p) && p.imagen && p.imagen !== 'en proceso')
+    .map((p) => p.imagen);
+};
+
+
+
+
 function CategoriaCarrusel({ imagenes, fallbackClass }) {
   const [idx, setIdx] = useState(0);
 
@@ -79,6 +90,8 @@ function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Coleccio
     estadoArrastre.current.activo = false;
     setArrastrando(false);
   };
+
+
 
   // Evita que el <Link> redirija si el usuario estaba arrastrando
   const manejarClickCaptura = (e) => {
@@ -206,37 +219,48 @@ function Inicio() {
         </div>
       </section>
 
-      {/* CATEGORIES SECTION 
-      PENDIENTE REVISAR  CODIGO ULTIMA MODIFICACION 12/11/26
-      */}
-      <section className={`${styles['categorias-section'] || 'categorias-section'}`}>
-        <h2 className={`${styles['section-title'] || 'section-title'}`}>Encuentra tu estilo</h2>
-        <div className={`${styles['categorias-grid'] || 'categorias-grid'}`}>
-          <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
+
+
+      {/* CATEGORIES SECTION */}
+      <section className={styles?.['categorias-section'] || 'categorias-section'}>
+        <h2 className={styles?.['section-title'] || 'section-title'}>Encuentra tu estilo</h2>
+        <div className={styles?.['categorias-grid'] || 'categorias-grid'}>
+          <Link
+            to="/Coleccion"
+            className={styles?.['categoria-card'] || 'categoria-card'}
+          >
             <CategoriaCarrusel
-              imagenes={todosLosProductos.filter(p => p.genero === 'unisex' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
+              imagenes={obtenerImagenesValidas(todosLosProductos, (p) => p.genero === "unisex")}
               fallbackClass="unisex-bg"
             />
-            <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
-              <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
+            <div className={styles?.['categoria-info'] || 'categoria-info'}>
+              <span className={styles?.['categoria-link'] || 'categoria-link'}>Explorar →</span>
             </div>
           </Link>
-          <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
+
+          <Link
+            to="/Coleccion"
+            className={styles?.['categoria-card'] || 'categoria-card'}
+          >
             <CategoriaCarrusel
-              imagenes={todosLosProductos.filter(p => p.genero === 'unisex' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
+              imagenes={obtenerImagenesValidas(todosLosProductos, (p) => p.genero === "unisex")}
               fallbackClass="unisex-bg"
             />
-            <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
-              <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
+            <div className={styles?.['categoria-info'] || 'categoria-info'}>
+              <span className={styles?.['categoria-link'] || 'categoria-link'}>Explorar →</span>
             </div>
           </Link>
-          <Link to="/Coleccion" className={`${styles['categoria-card'] || 'categoria-card'}`}>
+
+          <Link
+            to="/Coleccion"
+            className={styles?.['categoria-card'] || 'categoria-card'}
+          >
             <CategoriaCarrusel
-              imagenes={todosLosProductos.filter(p => p.genero === 'unisex' && p.imagen && p.imagen !== 'en proceso').map(p => p.imagen)}
+              imagenes={obtenerImagenesValidas(todosLosProductos, (p) => p.genero === "unisex")}
               fallbackClass="unisex-bg"
             />
-            <div className={`${styles['categoria-info'] || 'categoria-info'}`}>
-              <span className={`${styles['categoria-link'] || 'categoria-link'}`}>Explorar →</span>
+            <div className={styles?.['categoria-info'] || 'categoria-info'}>
+              <span className={styles?.['categoria-link'] || 'categoria-link'}>Explorar →</span>
             </div>
           </Link>
         </div>
