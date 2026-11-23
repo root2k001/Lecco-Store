@@ -28,9 +28,7 @@ function Cabecera() {
                     <li>
                         <Link to="/" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Inicio</Link>
                     </li>
-                    <li>
-                        <Link to="/Especiales" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Coleccion</Link>
-                    </li>
+
 
 
                     <li>
@@ -38,7 +36,7 @@ function Cabecera() {
                     </li>
 
                     <li>
-                        <Link to="/Contacto" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Sale</Link>
+                        <Link to="/Sale" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Sale</Link>
                     </li>
 
                     <li>

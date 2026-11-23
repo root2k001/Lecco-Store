@@ -6,6 +6,8 @@ import { verifyToken } from '../middlewares/authMiddleware.js';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { registroSchema, loginSchema, perfilSchema } from '../validators/auth.js';
 import crypto from 'crypto';
+import { enviarEmail } from '../services/emailService.js';
+import { plantillaBienvenida } from '../services/emailTemplates.js';
 
 const router = Router();
 
@@ -66,7 +68,14 @@ router.post('/registro', registroLimiter, async (req, res) => {
       }
     });
 
-    // 5. Devolver éxito sin exponer la contraseña
+    // 5. Enviar email de bienvenida (fire-and-forget, no bloquea el registro)
+    enviarEmail({
+      to: email,
+      subject: '¡Bienvenido/a a Lecco Store! 🎉',
+      html: plantillaBienvenida({ nombre })
+    });
+
+    // 6. Devolver éxito sin exponer la contraseña
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
       usuario: { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email, rol: nuevoUsuario.rol }
