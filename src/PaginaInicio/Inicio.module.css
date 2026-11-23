@@ -477,6 +477,7 @@
 }
 
 .tarjeta-coleccion {
+  margin: 20px;
   position: relative;
   flex: 0 0 17.5vw;
   min-width: 260px;
