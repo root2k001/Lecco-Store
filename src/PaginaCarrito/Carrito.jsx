@@ -30,8 +30,8 @@ function Carrito() {
         setMostrarEnvio(true)
     }
 
-    // ─── Constante con tu número de WhatsApp (código país Perú + número) ────────
-    const WHATSAPP_NUMERO = '51966894989'
+    // ─── Constante con número de WhatsApp (configurable vía VITE_WHATSAPP_NUMERO) ────────
+    const WHATSAPP_NUMERO = import.meta.env.VITE_WHATSAPP_NUMERO || '51966894989'
 
     // Construye el mensaje de WhatsApp con todos los detalles del pedido
     const generarMensajeWhatsApp = (numeroPedido) => {

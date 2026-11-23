@@ -34,7 +34,7 @@ function Cabecera() {
 
 
                     <li>
-                        <Link to="/Coleccion" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Lentes</Link>
+                        <Link to="/Lentes" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Lentes</Link>
                     </li>
 
                     <li>

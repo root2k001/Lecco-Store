@@ -1,18 +1,18 @@
 
 
 import Cabecera from '../Compartidos/cabecera/cabecera.jsx';
-import Productos from './ListaProductos/Productos';
+import Productos from './ListaProductos/Productos.jsx';
 import PiePagina from '../Compartidos/footer/Footer.jsx';
 
-function Principal(){
+function Principal() {
 
 
-    return(
+    return (
         <div className="Principal-container">
             <Cabecera />
-            <Productos  />
-          <PiePagina />
-          
+            <Productos />
+            <PiePagina />
+
         </div>
     )
 }

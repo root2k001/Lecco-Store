@@ -1,78 +1,109 @@
-import { PrismaClient } from '@prisma/client';
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Origen: Neon DB (remota)
+const neonUrl = process.env.URL_RESPALDO || process.env.NEON_DATABASE_URL || 'postgresql://neondb_owner:npg_0NJLKdn1IzUB@ep-polished-rice-aqe5aa77-pooler.c-8.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require';
+
+// Destino: PostgreSQL local de Docker (db:5432 en contenedor o localhost:5432 desde host)
+const destinoUrl = process.env.URL_PRODUCTION || process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/leccostore?schema=public';
 
 const origen = new PrismaClient({
-  datasources: { db: { url: 'URL_RESPALDO' } },
+  datasources: { db: { url: neonUrl } },
 });
 const destino = new PrismaClient({
-  datasources: { db: { url: 'URL_PRODUCTION' } },
+  datasources: { db: { url: destinoUrl } },
 });
 
-const normalizar = (val) =>
-  val !== null && typeof val === 'object' && val.constructor === Object
-    ? JSON.stringify(val)
-    : val;
-
-async function main() {
-  const tablas = await origen.$queryRawUnsafe(`
-    SELECT tablename FROM pg_tables
-    WHERE schemaname = 'public' AND tablename != '_prisma_migrations'
-  `);
-
-  let pendientes = tablas.map((t) => t.tablename);
-
-  while (pendientes.length > 0) {
-    const siguientes = [];
-    let progreso = false;
-
-    for (const tabla of pendientes) {
-      const filas = await origen.$queryRawUnsafe(`SELECT * FROM "${tabla}"`);
-      if (filas.length === 0) {
-        progreso = true;
-        continue;
-      }
-
-      try {
-        for (const fila of filas) {
-          const cols = Object.keys(fila);
-          const colsSql = cols.map((c) => `"${c}"`).join(', ');
-          const paramsSql = cols.map((_, i) => `$${i + 1}`).join(', ');
-          const valores = cols.map((c) => normalizar(fila[c]));
-
-          await destino.$executeRawUnsafe(
-            `INSERT INTO "${tabla}" (${colsSql}) VALUES (${paramsSql}) ON CONFLICT DO NOTHING`,
-            ...valores
+async function resetSequence(tabla) {
+  try {
+    await destino.$executeRawUnsafe(`
+      DO $$ BEGIN
+        IF pg_get_serial_sequence('"${tabla}"', 'id') IS NOT NULL THEN
+          PERFORM setval(
+            pg_get_serial_sequence('"${tabla}"', 'id'),
+            COALESCE((SELECT MAX("id") FROM "${tabla}"), 1),
+            (SELECT COUNT(*) > 0 FROM "${tabla}")
           );
-        }
-        // Reiniciar secuencia autoincremental si la tabla tiene columna "id"
-        await destino.$executeRawUnsafe(`
-          DO $$ BEGIN
-            IF pg_get_serial_sequence('"${tabla}"', 'id') IS NOT NULL THEN
-              PERFORM setval(
-                pg_get_serial_sequence('"${tabla}"', 'id'),
-                COALESCE((SELECT MAX("id") FROM "${tabla}"), 1),
-                (SELECT COUNT(*) > 0 FROM "${tabla}")
-              );
-            END IF;
-          END $$;
-        `);
-        console.log(`✔ ${tabla}: ${filas.length} registros restaurados`);
-        progreso = true;
-      } catch (err) {
-        if (err.message.includes('23503')) {
-          siguientes.push(tabla); // Esperar a que se inserte primero su tabla padre
-        } else {
-          throw err;
-        }
-      }
-    }
-
-    if (!progreso) throw new Error(`No se pudieron resolver dependencias: ${siguientes}`);
-    pendientes = siguientes;
+        END IF;
+      END $$;
+    `);
+  } catch (err) {
+    console.warn(`No se pudo reiniciar secuencia para ${tabla}:`, err.message);
   }
 }
 
+async function migrarTabla(nombre, consultarOrigen, insertarDestino) {
+  try {
+    const registros = await consultarOrigen();
+    if (!registros || registros.length === 0) {
+      console.log(`- ${nombre}: 0 registros encontrados en Neon DB.`);
+      return;
+    }
+    const res = await insertarDestino(registros);
+    await resetSequence(nombre);
+    console.log(`✔ ${nombre}: ${registros.length} registros sincronizados (nuevos insertados: ${res?.count ?? registros.length})`);
+  } catch (err) {
+    console.error(`❌ Error al migrar ${nombre}:`, err.message);
+  }
+}
+
+async function main() {
+  console.log('🚀 Iniciando clonación de datos desde Neon DB hacia Local Docker PostgreSQL...');
+  console.log('Origen:', neonUrl.replace(/:[^:@]+@/, ':***@'));
+  console.log('Destino:', destinoUrl.replace(/:[^:@]+@/, ':***@'));
+
+  // 1. Usuarios
+  await migrarTabla('Usuario',
+    () => origen.usuario.findMany(),
+    (data) => destino.usuario.createMany({ data, skipDuplicates: true })
+  );
+
+  // 2. Productos
+  await migrarTabla('Producto',
+    () => origen.producto.findMany(),
+    (data) => destino.producto.createMany({ data, skipDuplicates: true })
+  );
+
+  // 3. Pedidos
+  await migrarTabla('Pedido',
+    () => origen.pedido.findMany(),
+    (data) => destino.pedido.createMany({ data, skipDuplicates: true })
+  );
+
+  // 4. Items de Pedido
+  await migrarTabla('ItemPedido',
+    () => origen.itemPedido.findMany(),
+    (data) => destino.itemPedido.createMany({ data, skipDuplicates: true })
+  );
+
+  // 5. Historial de Cambios
+  await migrarTabla('HistorialCambios',
+    () => origen.historialCambios.findMany(),
+    (data) => destino.historialCambios.createMany({ data, skipDuplicates: true })
+  );
+
+  // 6. Mensajes de Contacto
+  await migrarTabla('MensajeContacto',
+    () => origen.mensajeContacto.findMany(),
+    (data) => destino.mensajeContacto.createMany({ data, skipDuplicates: true })
+  );
+
+  // 7. Refresh Tokens
+  await migrarTabla('RefreshToken',
+    () => origen.refreshToken.findMany(),
+    (data) => destino.refreshToken.createMany({ data, skipDuplicates: true })
+  );
+
+  console.log('🎉 Migración de datos completada exitosamente.');
+}
+
 main()
-  .then(() => console.log('Restauración completa.'))
+  .catch((e) => {
+    console.error('Error fatal durante la migración:', e);
+    process.exit(1);
+  })
   .finally(async () => {
     await origen.$disconnect();
     await destino.$disconnect();

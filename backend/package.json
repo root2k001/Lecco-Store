@@ -7,8 +7,11 @@
   "packageManager": "pnpm@12.11.2",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js",
-    "build": "prisma generate"
+    "dev": "prisma generate && node --watch server.js",
+    "build": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:seed": "node seedAdmin.js"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
@@ -27,5 +30,13 @@
   },
   "devDependencies": {
     "prisma": "^5.14.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "bcrypt",
+      "prisma"
+    ]
   }
 }

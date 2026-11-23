@@ -44,16 +44,15 @@
 
 .logo {
   font-family: var(--font-cabecera);
-  font-size: 3rem;
-  font-weight: 200;
-
+  font-size: 2.4rem;
+  font-weight: 800;
   letter-spacing: 5px;
   color: var(--color-primary);
-  text-decoration: none;
   text-transform: uppercase;
   justify-self: center;
   text-align: center;
-  transition: opacity 0.3s ease, color 0.3s ease;
+  text-decoration: none;
+  transition: opacity 0.3s, color 0.3s;
 }
 
 .logo:hover {
