@@ -3,8 +3,16 @@ import prisma from '../prisma.js';
 import { verifyToken, verifyAdmin, optionalToken } from '../middlewares/authMiddleware.js';
 import { Resend } from 'resend';
 import { crearPedidoSchema, actualizarEstadoPedidoSchema } from '../validators/pedidos.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
+
+// Limita la creación de pedidos (acepta invitados y descuenta stock al instante)
+const crearPedidoLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { error: 'Demasiados pedidos en poco tiempo. Intenta de nuevo más tarde.' }
+});
 
 // Helper para escapar caracteres HTML especiales en emails
 const escapeHtml = (str) => String(str)
@@ -29,7 +37,7 @@ const estadoLabels = {
 };
 
 // Crear un nuevo pedido (Opción A: acepta invitados sin cuenta)
-router.post('/', optionalToken, async (req, res) => {
+router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
   // Si el usuario está logueado, tendrá su ID. Si es invitado, será null.
   const usuarioId = req.usuario ? req.usuario.id : null;
   const validacion = crearPedidoSchema.safeParse(req.body);
@@ -74,11 +82,15 @@ router.post('/', optionalToken, async (req, res) => {
 
         totalCalculado += producto.precio * item.cantidad;
 
-        // 4. Decrementar stock atómicamente dentro de la transacción
-        await tx.producto.update({
-          where: { id: producto.id },
+        // 4. Decrementar stock de forma atómica: solo si sigue habiendo stock suficiente.
+        //    Evita stock negativo cuando dos pedidos concurrentes pasan la verificación del paso 2.
+        const { count } = await tx.producto.updateMany({
+          where: { id: producto.id, stock: { gte: item.cantidad } },
           data: { stock: { decrement: item.cantidad } }
         });
+        if (count === 0) {
+          throw new Error(`VALIDATION:Stock insuficiente para "${producto.nombre}".`);
+        }
       }
 
       // 5. Crear el pedido con el total calculado por el servidor
@@ -184,41 +196,36 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Pedido no encontrado' });
     }
 
-    const transacciones = [];
-
-    // Manejar el stock si cambia el estado respecto a "cancelado"
-    if (pedidoPrevio.estado !== 'cancelado' && estado === 'cancelado') {
-      // Se cancela: regresar el stock
-      for (const item of pedidoPrevio.items) {
-        transacciones.push(
-          prisma.producto.update({
+    // Ejecutar los cambios de stock y estado atómicamente
+    await prisma.$transaction(async (tx) => {
+      // Manejar el stock si cambia el estado respecto a "cancelado"
+      if (pedidoPrevio.estado !== 'cancelado' && estado === 'cancelado') {
+        // Se cancela: regresar el stock
+        for (const item of pedidoPrevio.items) {
+          await tx.producto.update({
             where: { id: item.productoId },
             data: { stock: { increment: item.cantidad } }
-          })
-        );
-      }
-    } else if (pedidoPrevio.estado === 'cancelado' && estado !== 'cancelado') {
-      // Se "descancela": volver a descontar el stock
-      for (const item of pedidoPrevio.items) {
-        transacciones.push(
-          prisma.producto.update({
-            where: { id: item.productoId },
+          });
+        }
+      } else if (pedidoPrevio.estado === 'cancelado' && estado !== 'cancelado') {
+        // Se "descancela": volver a descontar el stock, solo si hay suficiente
+        for (const item of pedidoPrevio.items) {
+          const { count } = await tx.producto.updateMany({
+            where: { id: item.productoId, stock: { gte: item.cantidad } },
             data: { stock: { decrement: item.cantidad } }
-          })
-        );
+          });
+          if (count === 0) {
+            throw new Error(`VALIDATION:Stock insuficiente para reactivar el pedido ("${item.producto?.nombre || `ID #${item.productoId}`}").`);
+          }
+        }
       }
-    }
 
-    // Actualizar el pedido
-    transacciones.push(
-      prisma.pedido.update({
+      // Actualizar el pedido
+      await tx.pedido.update({
         where: { id: parseInt(id) },
         data: { estado }
-      })
-    );
-
-    // Ejecutar todas las transacciones atómicamente
-    await prisma.$transaction(transacciones);
+      });
+    });
 
     // Obtenemos el pedido actualizado de la bd o asumimos sus valores previos para continuar
     const pedidoActualizado = { ...pedidoPrevio, estado };
@@ -303,6 +310,9 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
     res.json(pedidoActualizado);
   } catch (error) {
     console.error('Error actualizando estado del pedido:', error);
+    if (error.message?.startsWith('VALIDATION:')) {
+      return res.status(400).json({ error: error.message.replace('VALIDATION:', '') });
+    }
     res.status(500).json({ error: 'Hubo un error al actualizar el estado del pedido' });
   }
 });

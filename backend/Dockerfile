@@ -28,7 +28,8 @@ EXPOSE 3000
 # ==========================================
 FROM base AS development
 ENV NODE_ENV=development
-CMD ["pnpm", "dev"]
+# Aplica las migraciones pendientes antes de levantar el servidor
+CMD ["sh", "-c", "pnpm db:migrate && pnpm dev"]
 
 # ==========================================
 # Etapa de Producción

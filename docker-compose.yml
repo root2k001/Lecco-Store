@@ -38,10 +38,12 @@ services:
       - PORT=3000
       - HOST=0.0.0.0
       - NODE_ENV=development
-      # Si se define DATABASE_URL en backend/.env (ej. Neon DB), tiene prioridad;
-      # si no, se conecta al servicio interno 'db' de este docker-compose:
+      # OJO: 'environment' tiene prioridad sobre 'env_file' (backend/.env).
+      # Por defecto Docker usa SIEMPRE la BD local 'db' (al arrancar se ejecuta
+      # 'prisma migrate deploy', así que no conviene apuntar a Neon por accidente).
+      # Para usar otra BD, define DATABASE_URL en la shell o en un .env de la raíz.
       - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-leccostore}?schema=public}
-      - JWT_SECRET=${JWT_SECRET:-244f0a7af64bf5692596aa99f6e43f8573b7d64ec7c37ad437a7fc1beeb50a99ddd1306441d31818abe4606b2e831114cccf3cb15313a45707a8d27dd7ef87fd}
+      # JWT_SECRET no se define aquí: se toma de backend/.env (env_file).
       - FRONTEND_URL=http://localhost:5173,http://localhost:80,http://frontend:5173
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}

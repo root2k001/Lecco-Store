@@ -41,7 +41,7 @@ router.post('/registro', registroLimiter, async (req, res) => {
     // 1. Validar esquema con Zod
     const result = registroSchema.safeParse(req.body);
     if (!result.success) {
-      return res.status(400).json({ error: result.error.errors[0].message });
+      return res.status(400).json({ error: result.error.issues[0]?.message || 'Datos inválidos' });
     }
 
     const { nombre, email, password } = result.data;
@@ -91,7 +91,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   try {
     const result = loginSchema.safeParse(req.body);
     if (!result.success) {
-      return res.status(400).json({ error: result.error.errors[0].message });
+      return res.status(400).json({ error: result.error.issues[0]?.message || 'Datos inválidos' });
     }
 
     const { email, password } = result.data;
@@ -99,7 +99,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     const usuario = await prisma.usuario.findUnique({ where: { email } });
 
     if (!usuario) {
-      return res.status(404).json({ error: 'Usuario o contraseña incorrectos' }); // Mensaje ambiguo por seguridad
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' }); // Mensaje ambiguo por seguridad
     }
 
     const passwordValida = await bcrypt.compare(password, usuario.password);
@@ -242,7 +242,7 @@ router.put('/perfil', verifyToken, async (req, res) => {
   try {
     const result = perfilSchema.safeParse(req.body);
     if (!result.success) {
-      return res.status(400).json({ error: result.error.errors[0].message });
+      return res.status(400).json({ error: result.error.issues[0]?.message || 'Datos inválidos' });
     }
 
     const { nombre, email, password } = result.data;
