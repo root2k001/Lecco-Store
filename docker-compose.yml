@@ -1,0 +1,101 @@
+services:
+  # ==========================================
+  # Base de Datos PostgreSQL Local
+  # ==========================================
+  db:
+    image: postgres:16-alpine
+    container_name: lecco-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-leccostore}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - lecco_pgdata:/var/lib/postgresql/data
+    networks:
+      - lecco-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-leccostore}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Backend API (Node.js + Express + Prisma)
+  # ==========================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: lecco-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+    environment:
+      - PORT=3000
+      - HOST=0.0.0.0
+      - NODE_ENV=development
+      # OJO: 'environment' tiene prioridad sobre 'env_file' (backend/.env).
+      # Por defecto Docker usa SIEMPRE la BD local 'db' (al arrancar se ejecuta
+      # 'prisma migrate deploy', así que no conviene apuntar a Neon por accidente).
+      # Para usar otra BD, define DATABASE_URL en la shell o en un .env de la raíz.
+      - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-leccostore}?schema=public}
+      # JWT_SECRET no se define aquí: se toma de backend/.env (env_file).
+      - FRONTEND_URL=http://localhost:5173,http://localhost:80,http://frontend:5173
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-Lecco Store <onboarding@resend.dev>}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@tudominio.com}
+    env_file:
+      - path: ./backend/.env
+        required: false
+    volumes:
+      # Sincronización en caliente para desarrollo:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - lecco-network
+
+  # ==========================================
+  # Frontend (Vite + React SPA)
+  # ==========================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: lecco-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    environment:
+      - VITE_PORT=5173
+      - BACKEND_URL=http://backend:3000
+      - VITE_WHATSAPP_NUMERO=${VITE_WHATSAPP_NUMERO:-51966894989}
+    volumes:
+      # Sincronización en caliente para desarrollo:
+      - .:/app
+      - /app/node_modules
+      - /app/backend
+      - /app/dist
+    depends_on:
+      - backend
+    networks:
+      - lecco-network
+
+networks:
+  lecco-network:
+    driver: bridge
+
+volumes:
+  lecco_pgdata:
+    driver: local
+

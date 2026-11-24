@@ -1,86 +1,116 @@
-import { createContext, useState, useContext, useEffect } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 
 const AuthContext = createContext();
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (context === undefined) {
+        throw new Error('useAuth debe usarse dentro de un AuthProvider');
+    }
+    return context;
+};
+
+// Helper para abstraer fetch y evitar duplicación
+const fetchApi = async (endpoint, options = {}) => {
+    const response = await fetch(`/api/usuarios${endpoint}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers,
+        },
+        credentials: 'include',
+    });
+
+    const isJson = response.headers.get('content-type')?.includes('application/json');
+    const data = isJson ? await response.json() : null;
+
+    if (!response.ok) {
+        throw new Error(data?.error || 'Error en la petición');
+    }
+
+    return { response, data };
+};
 
 export const AuthProvider = ({ children }) => {
-    const [usuario, setUsuario] = useState(() => {
-        const storedUser = localStorage.getItem('lecco_usuario');
-        return storedUser ? JSON.parse(storedUser) : null;
-    });
-    const [token, setToken] = useState(() => localStorage.getItem('lecco_token'));
+    const [isLoading, setIsLoading] = useState(true);
+    const [usuario, setUsuario] = useState(null);
 
-    const guardarSesion = (user, jwtToken) => {
-        setUsuario(user);
-        setToken(jwtToken);
-        localStorage.setItem('lecco_usuario', JSON.stringify(user));
-        localStorage.setItem('lecco_token', jwtToken);
-    };
+    useEffect(() => {
+        const initAuth = async () => {
+            try {
+                // Intento inicial
+                const { response, data } = await fetchApi('/me').catch(() => ({ response: { ok: false } }));
+                
+                if (response?.ok) {
+                    setUsuario(data.usuario);
+                    return;
+                }
 
-    const login = async (email, password) => {
-        const response = await fetch('/api/usuarios/login', {
+                // Intento de refresco
+                const refreshRes = await fetchApi('/refresh', { method: 'POST' }).catch(() => ({ response: { ok: false } }));
+                if (refreshRes.response?.ok) {
+                    const retryRes = await fetchApi('/me').catch(() => ({ response: { ok: false } }));
+                    if (retryRes.response?.ok) {
+                        setUsuario(retryRes.data.usuario);
+                    }
+                }
+            } catch (error) {
+                console.error("Error validando sesión:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        initAuth();
+    }, []);
+
+    const login = useCallback(async (email, password) => {
+        const { data } = await fetchApi('/login', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Error al iniciar sesión');
-        }
-
-        guardarSesion(data.usuario, data.token);
+        setUsuario(data.usuario);
         return data;
-    };
+    }, []);
 
-    const registro = async (nombre, email, password) => {
-        const response = await fetch('/api/usuarios/registro', {
+    const registro = useCallback(async (nombre, email, password) => {
+        const { data } = await fetchApi('/registro', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ nombre, email, password })
         });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Error al registrarse');
-        }
-        
         return data;
-    };
+    }, []);
 
-    const logout = () => {
-        setUsuario(null);
-        setToken(null);
-        localStorage.removeItem('lecco_usuario');
-        localStorage.removeItem('lecco_token');
-    };
+    const logout = useCallback(async () => {
+        try {
+            await fetchApi('/logout', { method: 'POST' });
+        } catch (e) {
+            console.error("Error al cerrar sesión:", e);
+        } finally {
+            setUsuario(null);
+        }
+    }, []);
 
-    const actualizarPerfil = async (datosPerfil) => {
-        const response = await fetch('/api/usuarios/perfil', {
+    const actualizarPerfil = useCallback(async (datosPerfil) => {
+        const { data } = await fetchApi('/perfil', {
             method: 'PUT',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` 
-            },
             body: JSON.stringify(datosPerfil)
         });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.error || 'Error al actualizar el perfil');
-        }
-        
-        // Actualizar la sesión con el nuevo nombre/email
-        guardarSesion(data.usuario, token);
+        setUsuario(data.usuario);
         return data;
-    };
+    }, []);
+
+    const value = useMemo(() => ({
+        usuario,
+        isLoading,
+        login,
+        registro,
+        logout,
+        actualizarPerfil
+    }), [usuario, isLoading, login, registro, logout, actualizarPerfil]);
 
     return (
-        <AuthContext.Provider value={{ usuario, token, login, registro, logout, actualizarPerfil }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );

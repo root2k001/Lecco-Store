@@ -1,9 +1,13 @@
-import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+dotenv.config();
+
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 
 const prisma = new PrismaClient();
 
 async function makeAdmin() {
-  const emailToUpgrade = process.argv[2]; // pasaremos el correo como argumento
+  const emailToUpgrade = process.argv[2] || process.env.ADMIN_EMAIL; // argumento o ADMIN_EMAIL de .env
 
   if (!emailToUpgrade) {
     console.error('Por favor, proporciona el email del usuario. Ejemplo: node seedAdmin.js emilio@test.com');

@@ -1,0 +1,227 @@
+
+import './principal.css'
+import { Link } from 'react-router-dom'
+import { useCarrito } from '../../context/CarritoContext'
+import { useAuth } from '../../context/AuthContext'
+import { useFavoritos } from '../../context/FavoritosContext'
+import { useState } from 'react'
+import AuthModal from '../AuthModal/AuthModal'
+
+function Cabecera() {
+    const { carrito, eliminarDelCarrito, agregarAlCarrito, incrementarCantidad, decrementarCantidad } = useCarrito()
+    const { usuario, logout } = useAuth()
+    const { listaFavoritos, toggleFavorito } = useFavoritos()
+    const cantidadTotal = carrito.reduce((acc, item) => acc + item.quantity, 0)
+    const [mostrarModal, setMostrarModal] = useState(false)
+    const [showAuthModal, setShowAuthModal] = useState(false)
+    const [menuMobileAbierto, setMenuMobileAbierto] = useState(false)
+
+    const toggleModal = () => setMostrarModal(!mostrarModal)
+    const toggleMenuMobile = () => setMenuMobileAbierto(!menuMobileAbierto)
+    const total = carrito.reduce((acc, item) => acc + (item.price * item.quantity), 0)
+
+
+    return (
+        <section className="header">
+            <nav className={`navigation ${menuMobileAbierto ? 'nav-abierto' : ''}`}>
+                <ul>
+                    <li>
+                        <Link to="/" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Inicio</Link>
+                    </li>
+
+
+
+                    <li>
+                        <Link to="/Lentes" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Lentes</Link>
+                    </li>
+
+                    <li>
+                        <Link to="/Sale" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Sale</Link>
+                    </li>
+
+                    <li>
+                        <Link to="/Nosotros" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Nosotros</Link>
+                    </li>
+
+                </ul>
+            </nav>
+
+            <Link to="/" className="logo">Lecco</Link>
+
+            <nav>
+                <ul>
+                    {!usuario ? (
+                        <li>
+                            <button
+                                className="cabecera-iconos"
+                                style={{ marginRight: '15px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#111', display: 'flex', alignItems: 'center' }}
+                                onClick={() => { setShowAuthModal(true); setMenuMobileAbierto(false); }}
+                                title="Iniciar Sesión"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="8" r="4" />
+                                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                                </svg>
+                            </button>
+                        </li>
+                    ) : (
+                        <li className="usuario-nav">
+                            {usuario.rol === 'admin' && (
+                                <Link to="/admin" className="menu-link" style={{ color: '#3b82f6', fontWeight: 'bold' }} onClick={() => setMenuMobileAbierto(false)}>Panel Admin</Link>
+                            )}
+                            <Link to="/perfil" className="usuario-nombre" style={{ textDecoration: 'none' }} title="Ir a Mi Perfil" onClick={() => setMenuMobileAbierto(false)}>Hola, {usuario.nombre}</Link>
+                            <button className="btn-logout" onClick={() => { logout(); setMenuMobileAbierto(false); }}>Cerrar Sesión</button>
+                        </li>
+                    )}
+                    <li className="carrito-container">
+                        <button className="cabecera-iconos" onClick={() => { toggleModal(); setMenuMobileAbierto(false); }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+                                <line x1="3" y1="6" x2="21" y2="6" />
+                                <path d="M16 10a4 4 0 0 1-8 0" />
+                            </svg>
+                        </button>
+                        {cantidadTotal > 0 && (
+                            <span className="contador-productos">{cantidadTotal}</span>
+                        )}
+                    </li>
+                </ul>
+            </nav>
+
+            <button className="menu-hamburguesa" onClick={toggleMenuMobile}>
+                {menuMobileAbierto ? '✕' : '☰'}
+            </button>
+
+            {mostrarModal && (
+                <div className="carrito-modal-overlay" onClick={toggleModal}>
+                    <div className="carrito-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="carrito-modal-header">
+                            <h2>Tu Carrito</h2>
+                            <button className="carrito-modal-cerrar" onClick={toggleModal}>×</button>
+                        </div>
+                        <div className="carrito-modal-body">
+                            {carrito.length === 0 ? (
+                                <p className="carrito-vacio">Tu carrito está vacío</p>
+                            ) : (
+                                <ul className="carrito-productos">
+                                    {carrito.map((item) => (
+                                        <li key={item.id} className="carrito-item">
+                                            <div className="carrito-item-contenido-izq">
+                                                <div className="carrito-item-imagen">
+                                                    {item.img && item.img !== 'en proceso' ? (
+                                                        <img src={item.img} alt={item.name} />
+                                                    ) : (
+                                                        <span className="carrito-item-placeholder">👓</span>
+                                                    )}
+                                                </div>
+                                                <div className="carrito-item-info">
+                                                    <span className="carrito-item-nombre">{item.name}</span>
+                                                    <div className="carrito-item-cantidad-selector">
+                                                        <button
+                                                            className="btn-cantidad"
+                                                            onClick={() => decrementarCantidad(item.id)}
+                                                            title="Disminuir cantidad"
+                                                        >
+                                                            -
+                                                        </button>
+                                                        <span className="cantidad-numero">{item.quantity}</span>
+                                                        <button
+                                                            className="btn-cantidad"
+                                                            onClick={() => incrementarCantidad(item.id)}
+                                                            title={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? "Límite de stock alcanzado" : "Aumentar cantidad"}
+                                                            disabled={item.quantity >= (item.stock !== undefined ? item.stock : Infinity)}
+                                                            style={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                                        >
+                                                            +
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="carrito-item-acciones">
+                                                <span className="carrito-item-precio">S/ {(item.price * item.quantity).toLocaleString('es-PE')}</span>
+                                                <button
+                                                    className="carrito-item-eliminar"
+                                                    onClick={() => eliminarDelCarrito(item.id)}
+                                                >
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                        {listaFavoritos.length > 0 && (
+                            <div className="carrito-favoritos-seccion">
+                                <p className="carrito-favoritos-titulo">Tus Favoritos</p>
+                                <div className="favoritos-horizontal-list">
+                                    {listaFavoritos.map(fav => (
+                                        <div key={fav.id} className="favorito-horizontal-card">
+                                            <button
+                                                className="fav-card-quitar"
+                                                onClick={() => toggleFavorito(fav)}
+                                                title="Quitar de favoritos"
+                                            >
+                                                ×
+                                            </button>
+                                            <div className="fav-card-imagen">
+                                                {fav.img && fav.img !== 'en proceso'
+                                                    ? <img src={fav.img} alt={fav.name} />
+                                                    : <span className="fav-card-placeholder">👓</span>
+                                                }
+                                            </div>
+                                            <div className="fav-card-info">
+                                                <div className="fav-card-divisor"></div>
+                                                <div className="fav-card-meta">
+                                                    <div className="fav-card-datos">
+                                                        <h4 className="fav-card-nombre">{fav.name}</h4>
+                                                        <p className="fav-card-precio">S/ {fav.price?.toLocaleString('es-PE')}</p>
+                                                    </div>
+                                                    <button
+                                                        className="fav-card-btn-carrito"
+                                                        onClick={() => agregarAlCarrito(fav)}
+                                                        title="Añadir al carrito"
+                                                    >
+                                                        <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                                            <circle cx="9" cy="21" r="1"></circle>
+                                                            <circle cx="20" cy="21" r="1"></circle>
+                                                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {carrito.length > 0 && (
+                            <div className="carrito-modal-footer">
+                                <div className="carrito-total">
+                                    <span>Total:</span>
+                                    <span>S/ {total.toLocaleString('es-PE')}</span>
+                                </div>
+                                <Link
+                                    to="/Carrito"
+                                    className="btn-visualizar-carrito"
+                                    onClick={toggleModal}
+                                >
+                                    Visualizar Carrito
+                                </Link>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {showAuthModal && (
+                <AuthModal
+                    onClose={() => setShowAuthModal(false)}
+                    onSuccess={() => setShowAuthModal(false)}
+                />
+            )}
+        </section>
+    )
+}
+
+export default Cabecera;

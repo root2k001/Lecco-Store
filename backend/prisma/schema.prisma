@@ -8,14 +8,25 @@ datasource db {
 }
 
 model Usuario {
-  id         Int                @id @default(autoincrement())
-  nombre     String
-  email      String             @unique
-  password   String    
-  rol        String             @default("cliente")
-  creadoEn   DateTime           @default(now())
-  pedidos    Pedido[]
-  historial  HistorialCambios[]
+  id            Int                @id @default(autoincrement())
+  nombre        String
+  email         String             @unique
+  password      String    
+  rol           String             @default("cliente")
+  creadoEn      DateTime           @default(now())
+  pedidos       Pedido[]
+  historial     HistorialCambios[]
+  refreshTokens RefreshToken[]
+  resetTokens   PasswordResetToken[]
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  usuarioId Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  expiraEn  DateTime
+  creadoEn  DateTime @default(now())
 }
 
 model Producto {
@@ -24,18 +35,24 @@ model Producto {
   precio              Decimal      @db.Decimal(10, 2)
   imagen              String?
   genero              String       
+  color               String?
   stock               Int          @default(0)
   descripcion         String?
+  colores             String[]     @default([])
   imagenesAdicionales String[]     @default([])
   videos              String[]     @default([])
+  coleccion           Boolean      @default(false)
+  sale                Boolean      @default(false)
+  nuevosingresos      Boolean  @default(false)
   creadoEn            DateTime     @default(now())
   items               ItemPedido[]
+ 
 }
 
 model Pedido {
   id           Int          @id @default(autoincrement())
-  usuarioId    Int
-  usuario      Usuario      @relation(fields: [usuarioId], references: [id])
+  usuarioId    Int?         // null = pedido de invitado (Opción A: Guest Checkout)
+  usuario      Usuario?     @relation(fields: [usuarioId], references: [id])
   total        Decimal      @db.Decimal(10, 2)
   estado       String       @default("pendiente")
   direccion    String?
@@ -54,6 +71,9 @@ model ItemPedido {
   producto   Producto @relation(fields: [productoId], references: [id])
   cantidad   Int
   precioUnit Decimal  @db.Decimal(10, 2)
+  color      String?
+
+
 }
 
 model HistorialCambios {
@@ -63,6 +83,15 @@ model HistorialCambios {
   accion   String
   detalle  String
   creadoEn DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  usuarioId Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  expiraEn  DateTime
+  creadoEn  DateTime @default(now())
 }
 
 model MensajeContacto {

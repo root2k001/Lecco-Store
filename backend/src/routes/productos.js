@@ -1,26 +1,98 @@
 import { Router } from 'express';
 import prisma from '../prisma.js';
 import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
+import { crearProductoSchema, actualizarProductoSchema } from '../validators/productos.js';
 
 const router = Router();
 
-// Obtener todos los productos con paginación (Público)
+// Obtener colores únicos disponibles en la BD (para los botones de filtro)
+router.get('/colores', async (req, res) => {
+  try {
+    const productosConColor = await prisma.producto.findMany({
+      where: {
+        color: { not: null },
+      },
+      select: { color: true },
+      distinct: ['color'],
+    });
+
+    const coloresUnicos = [
+      ...new Set(
+        productosConColor
+          .map((p) => p.color?.trim())
+          .filter(Boolean)
+      ),
+    ];
+
+    res.json(coloresUnicos);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener los colores' });
+  }
+});
+
+// Obtener todos los productos con paginación, filtros y ordenamiento (Público)
 router.get('/', async (req, res) => {
   const page = Math.max(1, parseInt(req.query.page) || 1);
-  const limit = Math.min(50, parseInt(req.query.limit) || 12); // máx 50 por página
+  const limit = Math.min(50, parseInt(req.query.limit) || 16); // 16 por defecto
   const skip = (page - 1) * limit;
+
+  const where = {};
+
+  // Filtro opcional ?coleccion=true o ?coleccion=false
+  if (req.query.coleccion === 'true') {
+    where.coleccion = true;
+  } else if (req.query.coleccion === 'false') {
+    where.coleccion = false;
+  }
+
+  // Filtro opcional ?sale=true o ?sale=false
+  if (req.query.sale === 'true') {
+    where.sale = true;
+  } else if (req.query.sale === 'false') {
+    where.sale = false;
+  }
+
+  // Filtro opcional ?nuevosingresos=true o ?nuevosingresos=false
+  if (req.query.nuevosingresos === 'true') {
+    where.nuevosingresos = true;
+  } else if (req.query.nuevosingresos === 'false') {
+    where.nuevosingresos = false;
+  }
+
+  // Filtro por color desde la base de datos (insensible a mayúsculas/minúsculas)
+  if (req.query.color && req.query.color.trim() !== '') {
+    where.color = {
+      equals: req.query.color.trim(),
+      mode: 'insensitive',
+    };
+  }
+
+  // Ordenamiento desde la base de datos
+  let orderBy = { creadoEn: 'desc' }; // 'relevante' por defecto
+  if (req.query.orden === 'menor_mayor') {
+    orderBy = { precio: 'asc' };
+  } else if (req.query.orden === 'mayor_menor') {
+    orderBy = { precio: 'desc' };
+  }
 
   try {
     const [productos, total] = await Promise.all([
-      prisma.producto.findMany({ skip, take: limit, orderBy: { creadoEn: 'desc' } }),
-      prisma.producto.count()
+      prisma.producto.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+      }),
+      prisma.producto.count({ where }),
     ]);
+
     res.json({
       productos,
       total,
       page,
       totalPages: Math.ceil(total / limit),
-      limit
+      limit,
     });
   } catch (error) {
     console.error(error);
@@ -49,7 +121,14 @@ router.get('/:id', async (req, res) => {
 
 // Crear un producto
 router.post('/', verifyToken, verifyAdmin, async (req, res) => {
-  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = req.body;
+  const validacion = crearProductoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de actualización inválidos' });
+  }
+
+
+  // se añade en la constante  coleccion y sale 
+  const { nombre, precio, imagen, genero, color, stock, descripcion, imagenesAdicionales, videos, coleccion, sale, nuevosingresos } = validacion.data;
   try {
     const nuevoProducto = await prisma.producto.create({
       data: {
@@ -57,10 +136,17 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
         precio,
         imagen,
         genero,
+        color: color || null,
         stock,
         descripcion,
         imagenesAdicionales: imagenesAdicionales || [],
-        videos: videos || []
+        videos: videos || [],
+
+        // se agrega al objeto que se guarda en la BD
+        coleccion: coleccion ?? false,
+        sale: sale ?? false,
+        nuevosingresos: nuevosingresos ?? false,
+
       }
     });
     res.status(201).json(nuevoProducto);
@@ -75,17 +161,26 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   const { id } = req.params;
 
   // Whitelist: solo estos campos pueden ser modificados
-  const { nombre, precio, imagen, genero, stock, descripcion, imagenesAdicionales, videos } = req.body;
+  const validacion = actualizarProductoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de actualización inválidos' });
+  }
+  const { nombre, precio, imagen, genero, color, stock, descripcion, imagenesAdicionales, videos, coleccion, sale, nuevosingresos } = validacion.data;
   const data = {};
   if (nombre !== undefined) data.nombre = nombre;
   if (precio !== undefined) data.precio = precio;
   if (imagen !== undefined) data.imagen = imagen;
   if (genero !== undefined) data.genero = genero;
+  if (color !== undefined) data.color = color || null;
   if (stock !== undefined) data.stock = stock;
   if (descripcion !== undefined) data.descripcion = descripcion;
   if (imagenesAdicionales !== undefined) data.imagenesAdicionales = imagenesAdicionales;
   if (videos !== undefined) data.videos = videos;
 
+  // se incluye si vienen definidos en la peticion 
+  if (coleccion !== undefined) data.coleccion = coleccion;
+  if (sale !== undefined) data.sale = sale;
+  if (nuevosingresos !== undefined) data.nuevosingresos = nuevosingresos;
   try {
     const productoPrevio = await prisma.producto.findUnique({
       where: { id: parseInt(id) }

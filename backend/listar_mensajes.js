@@ -1,4 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+dotenv.config();
+
+import pkg from '@prisma/client';
+const { PrismaClient } = pkg;
 
 const prisma = new PrismaClient();
 
@@ -9,7 +13,7 @@ async function main() {
     });
 
     console.log('\n==================================================');
-    console.log(`📬 MENSAJES DE CONTACTO EN LA BASE DE DATOS (${mensajes.length})`);
+    console.log(` MENSAJES DE CONTACTO EN LA BASE DE DATOS (${mensajes.length})`);
     console.log('==================================================\n');
 
     if (mensajes.length === 0) {

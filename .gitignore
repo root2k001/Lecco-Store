@@ -14,10 +14,14 @@ node_modules
 dist
 dist-ssr
 
-# Archivos locales
+# Archivos locales y de entorno
 *.local
 .env
+.env.*
+!.env.example
 backend/.env
+backend/.env.*
+!backend/.env.example
 .DS_Store
 
 # Configuración de editores

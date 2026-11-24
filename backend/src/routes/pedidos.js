@@ -1,9 +1,18 @@
 import { Router } from 'express';
 import prisma from '../prisma.js';
-import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
+import { verifyToken, verifyAdmin, optionalToken } from '../middlewares/authMiddleware.js';
 import { Resend } from 'resend';
+import { crearPedidoSchema, actualizarEstadoPedidoSchema } from '../validators/pedidos.js';
+import rateLimit from 'express-rate-limit';
 
 const router = Router();
+
+// Limita la creación de pedidos (acepta invitados y descuenta stock al instante)
+const crearPedidoLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: { error: 'Demasiados pedidos en poco tiempo. Intenta de nuevo más tarde.' }
+});
 
 // Helper para escapar caracteres HTML especiales en emails
 const escapeHtml = (str) => String(str)
@@ -21,66 +30,88 @@ const crearResend = () => {
 
 // Mapa de estados para el email
 const estadoLabels = {
-  pendiente:   { label: 'Pendiente', color: '#d97706', bg: '#fef3c7' },
-  procesando:  { label: 'En Proceso', color: '#2563eb', bg: '#dbeafe' },
-  enviado:     { label: 'Enviado 🚀', color: '#db2777', bg: '#fce7f3' },
-  entregado:   { label: 'Entregado ✅', color: '#059669', bg: '#d1fae5' }
+  pendiente: { label: 'Pendiente', color: '#d97706', bg: '#fef3c7' },
+  procesando: { label: 'En Proceso', color: '#2563eb', bg: '#dbeafe' },
+  enviado: { label: 'Enviado ', color: '#db2777', bg: '#fce7f3' },
+  entregado: { label: 'Entregado ', color: '#059669', bg: '#d1fae5' }
 };
 
-// Crear un nuevo pedido (Ruta protegida)
-router.post('/', verifyToken, async (req, res) => {
-  const usuarioId = req.usuario.id;
-  const { items, total, direccion, ciudad, codigoPostal, telefono } = req.body;
-  // 'items' debe ser un arreglo que llegue del Frontend como: [{ productoId: 1, cantidad: 2, precio: 150 }]
+// Crear un nuevo pedido (Opción A: acepta invitados sin cuenta)
+router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
+  // Si el usuario está logueado, tendrá su ID. Si es invitado, será null.
+  const usuarioId = req.usuario ? req.usuario.id : null;
+  const validacion = crearPedidoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de pedido inválidos' });
+  }
+  const { items, direccion, ciudad, codigoPostal, telefono } = validacion.data;
+  // 'items' debe ser un arreglo: [{ productoId: 1, cantidad: 2 }]
+  // El precio y total se calculan desde la base de datos (NUNCA del frontend)
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({ error: 'El pedido debe contener al menos un producto.' });
+  }
 
   try {
-    // 1. Verificar stock disponible para todos los productos antes de crear el pedido
-    for (const item of items) {
-      const producto = await prisma.producto.findUnique({
-        where: { id: item.productoId }
-      });
-      if (!producto) {
-        return res.status(404).json({ error: `Producto con ID #${item.productoId} no encontrado.` });
-      }
-      if (producto.stock < item.cantidad) {
-        return res.status(400).json({ error: `Stock insuficiente para "${producto.nombre}". Stock disponible: ${producto.stock}.` });
-      }
-    }
-
-    // 2. Realizar la compra y descontar stock en una transacción
+    // Todo dentro de una transacción para evitar race conditions (TOCTOU)
     const nuevoPedido = await prisma.$transaction(async (tx) => {
-      const pedido = await tx.pedido.create({
-        data: {
-          usuarioId,
-          total,
-          direccion,
-          ciudad,
-          codigoPostal,
-          telefono,
-          items: {
-            create: items.map(item => ({
-              productoId: item.productoId,
-              cantidad: item.cantidad,
-              precioUnit: item.precio
-            }))
-          }
-        },
-        include: {
-          items: true
-        }
-      });
+      let totalCalculado = 0;
+      const itemsParaCrear = [];
 
-      // Descontar stock para cada producto
       for (const item of items) {
-        await tx.producto.update({
-          where: { id: item.productoId },
-          data: {
-            stock: {
-              decrement: item.cantidad
-            }
-          }
+        // 1. Obtener el producto con su precio REAL desde la BD
+        const producto = await tx.producto.findUnique({
+          where: { id: item.productoId }
         });
+
+        if (!producto) {
+          throw new Error(`VALIDATION:Producto con ID #${item.productoId} no encontrado.`);
+        }
+
+        // 2. Verificar stock DENTRO de la transacción (elimina race condition)
+        if (producto.stock < item.cantidad) {
+          throw new Error(`VALIDATION:Stock insuficiente para "${producto.nombre}". Stock disponible: ${producto.stock}.`);
+        }
+
+        // 3. Usar el precio de la BD, NUNCA el del frontend (previene price tampering)
+        itemsParaCrear.push({
+          productoId: producto.id,
+          cantidad: item.cantidad,
+          precioUnit: producto.precio
+        });
+
+        totalCalculado += producto.precio * item.cantidad;
+
+        // 4. Decrementar stock de forma atómica: solo si sigue habiendo stock suficiente.
+        //    Evita stock negativo cuando dos pedidos concurrentes pasan la verificación del paso 2.
+        const { count } = await tx.producto.updateMany({
+          where: { id: producto.id, stock: { gte: item.cantidad } },
+          data: { stock: { decrement: item.cantidad } }
+        });
+        if (count === 0) {
+          throw new Error(`VALIDATION:Stock insuficiente para "${producto.nombre}".`);
+        }
       }
+
+      // 5. Crear el pedido con el total calculado por el servidor
+      const pedidoData = {
+        total: totalCalculado,
+        direccion,
+        ciudad,
+        codigoPostal,
+        telefono,
+        items: { create: itemsParaCrear }
+      };
+
+      // Solo vincular usuario si está logueado (invitados no tienen usuarioId)
+      if (usuarioId) {
+        pedidoData.usuario = { connect: { id: usuarioId } };
+      }
+
+      const pedido = await tx.pedido.create({
+        data: pedidoData,
+        include: { items: true }
+      });
 
       return pedido;
     });
@@ -88,6 +119,12 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(201).json({ message: 'Pedido procesado exitosamente', pedido: nuevoPedido });
   } catch (error) {
     console.error('Error creando pedido:', error);
+
+    // Errores de validación de negocio (lanzados con throw new Error('VALIDATION:...'))
+    if (error.message?.startsWith('VALIDATION:')) {
+      return res.status(400).json({ error: error.message.replace('VALIDATION:', '') });
+    }
+
     res.status(500).json({ error: 'Hubo un error al procesar el pedido' });
   }
 });
@@ -140,7 +177,11 @@ router.get('/admin/todos', verifyToken, verifyAdmin, async (req, res) => {
 // Actualizar el estado de un pedido (ej. pendiente -> enviado)
 router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
   const { id } = req.params;
-  const { estado } = req.body;
+  const validacion = actualizarEstadoPedidoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de estado no válidos' });
+  }
+  const { estado, motivo } = validacion.data;
 
   try {
     const pedidoPrevio = await prisma.pedido.findUnique({
@@ -155,17 +196,51 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Pedido no encontrado' });
     }
 
-    const pedidoActualizado = await prisma.pedido.update({
-      where: { id: parseInt(id) },
-      data: { estado }
+    // Ejecutar los cambios de stock y estado atómicamente
+    await prisma.$transaction(async (tx) => {
+      // Manejar el stock si cambia el estado respecto a "cancelado"
+      if (pedidoPrevio.estado !== 'cancelado' && estado === 'cancelado') {
+        // Se cancela: regresar el stock
+        for (const item of pedidoPrevio.items) {
+          await tx.producto.update({
+            where: { id: item.productoId },
+            data: { stock: { increment: item.cantidad } }
+          });
+        }
+      } else if (pedidoPrevio.estado === 'cancelado' && estado !== 'cancelado') {
+        // Se "descancela": volver a descontar el stock, solo si hay suficiente
+        for (const item of pedidoPrevio.items) {
+          const { count } = await tx.producto.updateMany({
+            where: { id: item.productoId, stock: { gte: item.cantidad } },
+            data: { stock: { decrement: item.cantidad } }
+          });
+          if (count === 0) {
+            throw new Error(`VALIDATION:Stock insuficiente para reactivar el pedido ("${item.producto?.nombre || `ID #${item.productoId}`}").`);
+          }
+        }
+      }
+
+      // Actualizar el pedido
+      await tx.pedido.update({
+        where: { id: parseInt(id) },
+        data: { estado }
+      });
     });
+
+    // Obtenemos el pedido actualizado de la bd o asumimos sus valores previos para continuar
+    const pedidoActualizado = { ...pedidoPrevio, estado };
+    // Preparar el detalle del historial
+    let detalleHistorial = `Pedido #${id} del cliente "${pedidoPrevio.usuario?.nombre || 'Invitado'}": estado modificado de "${pedidoPrevio.estado}" a "${estado}".`;
+    if (estado === 'cancelado' && motivo) {
+      detalleHistorial += ` Motivo: ${motivo}`;
+    }
 
     // Registrar en el historial
     await prisma.historialCambios.create({
       data: {
         adminId: req.usuario.id,
-        accion: 'Cambio de Estado de Pedido',
-        detalle: `Pedido #${id} del cliente "${pedidoPrevio.usuario?.nombre || 'Desconocido'}": estado modificado de "${pedidoPrevio.estado}" a "${estado}".`
+        accion: estado === 'cancelado' ? 'Cancelación de Pedido' : 'Cambio de Estado de Pedido',
+        detalle: detalleHistorial
       }
     });
 
@@ -235,6 +310,9 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
     res.json(pedidoActualizado);
   } catch (error) {
     console.error('Error actualizando estado del pedido:', error);
+    if (error.message?.startsWith('VALIDATION:')) {
+      return res.status(400).json({ error: error.message.replace('VALIDATION:', '') });
+    }
     res.status(500).json({ error: 'Hubo un error al actualizar el estado del pedido' });
   }
 });

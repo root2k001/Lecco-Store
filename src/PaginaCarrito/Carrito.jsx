@@ -1,0 +1,279 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import './Carrito.css'
+import { useCarrito } from '../context/CarritoContext'
+
+import AuthModal from '../Compartidos/AuthModal/AuthModal'
+
+function Carrito() {
+    const { carrito, eliminarDelCarrito, incrementarCantidad, decrementarCantidad, vaciarCarrito } = useCarrito()
+
+
+    const [showAuthModal, setShowAuthModal] = useState(false)
+    const [compraExitosa, setCompraExitosa] = useState(false)
+    const [procesando, setProcesando] = useState(false)
+
+    // Nuevo estado para el formulario de envío
+    const [mostrarEnvio, setMostrarEnvio] = useState(false)
+    const [envioDatos, setEnvioDatos] = useState({
+        direccion: '',
+        ciudad: '',
+        codigoPostal: '',
+        telefono: ''
+    })
+
+    const total = carrito.reduce((acc, item) => acc + (item.price * item.quantity), 0)
+    const cantidadTotal = carrito.reduce((acc, item) => acc + item.quantity, 0)
+
+    const handleProcederPago = () => {
+        // Opción A: cualquier visitante puede proceder al pago sin registrarse
+        setMostrarEnvio(true)
+    }
+
+    // ─── Constante con número de WhatsApp (configurable vía VITE_WHATSAPP_NUMERO) ────────
+    const WHATSAPP_NUMERO = import.meta.env.VITE_WHATSAPP_NUMERO || '51966894989'
+
+    // Construye el mensaje de WhatsApp con todos los detalles del pedido
+    const generarMensajeWhatsApp = (numeroPedido) => {
+        const lineasProductos = carrito
+            .map(item => `  • ${item.name} x${item.quantity} — S/ ${(item.price * item.quantity).toLocaleString('es-PE')}`)
+            .join('\n')
+
+        return [
+            ` NUEVO PEDIDO `,
+            ` Pedido #${numeroPedido}`,
+            ``,
+            `*Datos de Entrega:*`,
+            ` Dirección: ${envioDatos.direccion}`,
+            ` Ciudad: ${envioDatos.ciudad}`,
+            ` C.P.: ${envioDatos.codigoPostal}`,
+            ` Teléfono: ${envioDatos.telefono}`,
+            ``,
+            ` *Productos:*`,
+            lineasProductos,
+            ``,
+            ` Total: S/ ${total.toLocaleString('es-PE')}`,
+            ``,
+            `Por favor confirmar disponibilidad y coordinar pago. `
+        ].join('\n')
+    }
+
+    const procesarPedido = async (e) => {
+        if (e) e.preventDefault();
+
+        try {
+            setProcesando(true)
+
+            const items = carrito.map(item => ({
+                productoId: item.id,
+                cantidad: item.quantity,
+                precio: item.price
+            }))
+
+            // Construir cabeceras: solo se incluye Authorization si hay token (usuario logueado)
+            const headers = { 'Content-Type': 'application/json' }
+
+
+            // 1. Guardar el pedido en el backend con estado "pendiente"
+            const response = await fetch('/api/pedidos', {
+                method: 'POST',
+                headers,
+                credentials: 'include',
+                body: JSON.stringify({
+                    total: total,
+                    items: items,
+                    direccion: envioDatos.direccion,
+                    ciudad: envioDatos.ciudad,
+                    codigoPostal: envioDatos.codigoPostal,
+                    telefono: envioDatos.telefono
+                })
+            })
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                throw new Error(errorData.error || 'Error al procesar el pedido en el servidor')
+            }
+
+            const data = await response.json()
+            const numeroPedido = data.pedido?.id || '—'
+
+            // 2. Abrir WhatsApp con el resumen del pedido
+            const mensaje = generarMensajeWhatsApp(numeroPedido)
+            const urlWhatsApp = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent(mensaje)}`
+            window.open(urlWhatsApp, '_blank', 'noopener,noreferrer')
+
+            // 3. Mostrar pantalla de éxito y vaciar carrito
+            vaciarCarrito()
+            setCompraExitosa(true)
+            setMostrarEnvio(false)
+        } catch (error) {
+            console.error('Error:', error)
+            alert(error.message || 'Hubo un problema al procesar tu pedido. Por favor intenta de nuevo.')
+        } finally {
+            setProcesando(false)
+        }
+    }
+
+
+    if (compraExitosa) {
+        return (
+            <div className="carrito-page">
+                <div className="carrito-vacio" style={{ marginTop: '50px' }}>
+
+                    <h2>¡Gracias la confianza  !</h2>
+                    <p>Tu pedido ha sido registrado exitosamente y será enviado a:</p>
+                    <p><strong>{envioDatos.direccion}, {envioDatos.ciudad}</strong></p>
+                    <p>se estara concretando la compra por whatsApp en un momento </p>
+                    <br />
+                    <Link to="/Coleccion" className="btn-seguir-comprando" onClick={() => setCompraExitosa(false)}>
+                        Volver a la tienda
+                    </Link>
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div className="carrito-page">
+            <h1>Tu Carrito de Compras</h1>
+
+            {carrito.length === 0 ? (
+                <div className="carrito-vacio">
+                    <span className="carrito-vacio-icono">🛒</span>
+                    <p>Tu carrito está vacío</p>
+                    <Link to="/Coleccion" className="btn-seguir-comprando">
+                        Ver colección
+                    </Link>
+                </div>
+            ) : (
+                <div className="carrito-contenido">
+                    <div className="carrito-productos">
+                        <div className="carrito-header">
+                            <span>{cantidadTotal} producto{cantidadTotal !== 1 ? 's' : ''}</span>
+                            <button className="btn-vaciar" onClick={vaciarCarrito}>
+                                Vaciar carrito
+                            </button>
+                        </div>
+                        <ul className="carrito-lista">
+                            {carrito.map((item) => (
+                                <li key={item.id} className="carrito-item">
+                                    <div className="carrito-item-imagen">
+                                        {item.img && item.img !== 'en proceso' ? (
+                                            <img src={item.img} alt={item.name} />
+                                        ) : (
+                                            <div className="imagen-placeholder">👓</div>
+                                        )}
+                                    </div>
+                                    <div className="carrito-item-info">
+                                        <span className="carrito-item-nombre">{item.name}</span>
+                                        <span className="carrito-item-genero">{item.gender}</span>
+                                        <span className="carrito-item-precio-unitario">S/ {item.price.toLocaleString('es-PE')} c/u</span>
+                                    </div>
+                                    <div className="carrito-item-cantidad-control">
+                                        <button
+                                            className="btn-cantidad"
+                                            onClick={() => decrementarCantidad(item.id)}
+                                            disabled={item.quantity <= 1}
+                                        >
+                                            −
+                                        </button>
+                                        <span className="cantidad-numero">{item.quantity}</span>
+                                        <button
+                                            className="btn-cantidad"
+                                            onClick={() => incrementarCantidad(item.id)}
+                                            disabled={item.quantity >= (item.stock !== undefined ? item.stock : Infinity)}
+                                            title={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? "Límite de stock alcanzado" : "Aumentar cantidad"}
+                                            style={item.quantity >= (item.stock !== undefined ? item.stock : Infinity) ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                        >
+                                            +
+                                        </button>
+                                    </div>
+                                    <div className="carrito-item-acciones">
+                                        <span className="carrito-item-precio">S/ {(item.price * item.quantity).toLocaleString('es-PE')}</span>
+                                        <button
+                                            className="carrito-item-eliminar"
+                                            onClick={() => eliminarDelCarrito(item.id)}
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    <div className="carrito-resumen">
+                        <h2>Resumen del Pedido</h2>
+                        <div className="carrito-resumen-item">
+                            <span>Subtotal ({cantidadTotal} producto{cantidadTotal !== 1 ? 's' : ''})</span>
+                            <span>S/ {total.toLocaleString('es-PE')}</span>
+                        </div>
+                        <div className="carrito-resumen-item">
+                            <span>Envío</span>
+                            <span className="envio-gratis">Gratis</span>
+                        </div>
+                        <div className="carrito-resumen-item total">
+                            <span>Total</span>
+                            <span>S/ {total.toLocaleString('es-PE')}</span>
+                        </div>
+
+                        {!mostrarEnvio ? (
+                            <>
+                                <button
+                                    className="btn-checkout"
+                                    onClick={handleProcederPago}
+                                >
+                                    Proceder al Pago
+                                </button>
+                                <Link to="/Coleccion" className="btn-seguir-comprando">
+                                    Continuar Comprando
+                                </Link>
+                            </>
+                        ) : (
+                            <form className="envio-form" onSubmit={procesarPedido}>
+                                <h3>Datos de Envío</h3>
+                                <input
+                                    required type="text" placeholder="Dirección completa"
+                                    value={envioDatos.direccion} onChange={e => setEnvioDatos({ ...envioDatos, direccion: e.target.value })}
+                                />
+                                <input
+                                    required type="text" placeholder="Ciudad"
+                                    value={envioDatos.ciudad} onChange={e => setEnvioDatos({ ...envioDatos, ciudad: e.target.value })}
+                                />
+                                <div className="envio-row">
+                                    <input
+                                        required type="text" placeholder="C.P."
+                                        value={envioDatos.codigoPostal} onChange={e => setEnvioDatos({ ...envioDatos, codigoPostal: e.target.value })}
+                                    />
+                                    <input
+                                        required type="text" placeholder="Teléfono"
+                                        value={envioDatos.telefono} onChange={e => setEnvioDatos({ ...envioDatos, telefono: e.target.value })}
+                                    />
+                                </div>
+                                <div className="envio-botones">
+                                    <button type="button" className="btn-volver" onClick={() => setMostrarEnvio(false)}>Atrás</button>
+                                    <button type="submit" className="btn-checkout confirmar" disabled={procesando}>
+                                        {procesando ? 'Procesando...' : 'Confirmar Pedido'}
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {showAuthModal && (
+                <AuthModal
+                    onClose={() => setShowAuthModal(false)}
+                    onSuccess={() => {
+                        setShowAuthModal(false)
+                        // Al iniciar sesión, se le abrirá el formulario de envío automáticamente
+                        setMostrarEnvio(true)
+                    }}
+                />
+            )}
+        </div>
+    )
+}
+
+export default Carrito

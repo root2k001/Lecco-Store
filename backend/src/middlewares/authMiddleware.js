@@ -2,15 +2,16 @@ import jwt from 'jsonwebtoken';
 
 // Middleware para verificar que el usuario tenga un token válido
 export const verifyToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  
-  if (!authHeader) {
-    return res.status(403).json({ error: 'Se requiere un token de autenticación' });
+  let token = req.cookies?.accessToken;
+  if (!token && req.headers?.authorization?.startsWith('Bearer ')) {
+    const bearerToken = req.headers.authorization.split(' ')[1];
+    if (bearerToken && bearerToken !== 'undefined' && bearerToken !== 'null') {
+      token = bearerToken;
+    }
   }
-
-  const token = authHeader.split(' ')[1]; // El formato suele ser "Bearer TOKEN_AQUI"
+  
   if (!token) {
-    return res.status(403).json({ error: 'Token no proporcionado o mal formado' });
+    return res.status(401).json({ error: 'No autorizado. Se requiere iniciar sesión.' });
   }
 
   try {
@@ -18,7 +19,7 @@ export const verifyToken = (req, res, next) => {
     req.usuario = decoded; // Guardamos { id, rol } en req.usuario para que la ruta lo use
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Token inválido o expirado' });
+    return res.status(401).json({ error: 'Sesión expirada o inválida. Vuelve a iniciar sesión.' });
   }
 };
 
@@ -30,6 +31,29 @@ export const verifyAdmin = (req, res, next) => {
 
   if (req.usuario.rol !== 'admin') {
     return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador' });
+  }
+
+  next();
+};
+
+// Middleware OPCIONAL: intenta leer el token pero no bloquea si no existe (para checkout de invitados)
+export const optionalToken = (req, res, next) => {
+  let token = req.cookies?.accessToken;
+  if (!token && req.headers?.authorization?.startsWith('Bearer ')) {
+    const bearerToken = req.headers.authorization.split(' ')[1];
+    if (bearerToken && bearerToken !== 'undefined' && bearerToken !== 'null') {
+      token = bearerToken;
+    }
+  }
+  req.usuario = null; // Por defecto: invitado (sin usuario)
+
+  if (!token) return next();
+
+  try {
+    req.usuario = jwt.verify(token, process.env.JWT_SECRET);
+  } catch {
+    // Token inválido o expirado: continuar como invitado igualmente
+    req.usuario = null;
   }
 
   next();
