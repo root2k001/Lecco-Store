@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Inicio from './PaginaInicio/Inicio'
 import Lentes from './PaginaCatalogo/Lentes.jsx'
+import Sale from './PaginaCatalogo/Sale.jsx'
 import Carrito from './PaginaCarrito/mainCarrito.jsx'
 import Nosotros from './PaginaInformacion/Nosotros.jsx'
 
@@ -29,7 +30,7 @@ function App() {
                 <Route path="/" element={<Inicio />} />
                 <Route path="/Coleccion" element={<Lentes />} />
                 <Route path="/Lentes" element={<Lentes />} />
-                <Route path="/Sale" element={<Lentes />} />
+                <Route path="/Sale" element={<Sale />} />
                 <Route path="/Carrito" element={<Carrito />} />
                 <Route path="/Nosotros" element={<Nosotros />} />
                 <Route path="/admin" element={<RutaAdmin><AdminDashboard /></RutaAdmin>} />

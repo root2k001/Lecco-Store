@@ -10,7 +10,7 @@ function Principal() {
     return (
         <div className="Principal-container">
             <Cabecera />
-            <Productos />
+            <Productos sale />
             <PiePagina />
 
         </div>

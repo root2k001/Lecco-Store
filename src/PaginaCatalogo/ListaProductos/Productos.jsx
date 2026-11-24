@@ -53,7 +53,7 @@ const DICCIONARIO_COLORES_HEX = {
     beige: '#f5f5dc'
 };
 
-const ProductosList = () => {
+const ProductosList = ({ sale = false }) => {
     const [productos, setProductos] = useState([]);
     const [coloresBD, setColoresBD] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -106,6 +106,11 @@ const ProductosList = () => {
                     params.append('color', colorSeleccionado);
                 }
 
+                // En la pestaña /Sale solo se piden productos en oferta
+                if (sale) {
+                    params.append('sale', 'true');
+                }
+
                 const response = await fetch(`/api/productos?${params.toString()}`);
 
                 if (!response.ok) {
@@ -141,7 +146,7 @@ const ProductosList = () => {
         };
 
         cargarProductos();
-    }, [pagina, colorSeleccionado, orden]);
+    }, [pagina, colorSeleccionado, orden, sale]);
 
     // Formatear colores únicos sin duplicar por mayúsculas/minúsculas
     const coloresDisponibles = useMemo(() => {
