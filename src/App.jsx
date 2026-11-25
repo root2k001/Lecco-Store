@@ -5,6 +5,7 @@ import Lentes from './PaginaCatalogo/Lentes.jsx'
 import Sale from './PaginaCatalogo/Sale.jsx'
 import Campana from './PaginaCatalogo/Campana.jsx'
 import Carrito from './PaginaCarrito/mainCarrito.jsx'
+import PagoResultado from './PaginaCarrito/PagoResultado.jsx'
 import Nosotros from './PaginaInformacion/Nosotros.jsx'
 
 import NotFound from './PaginaInformacion/NotFound.jsx'
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/Sale" element={<Sale />} />
                 <Route path="/campanas/:slug" element={<Campana />} />
                 <Route path="/Carrito" element={<Carrito />} />
+                <Route path="/pago/resultado" element={<PagoResultado />} />
                 <Route path="/Nosotros" element={<Nosotros />} />
                 <Route path="/admin" element={<RutaAdmin><AdminDashboard /></RutaAdmin>} />
                 <Route path="/perfil" element={<Perfil />} />

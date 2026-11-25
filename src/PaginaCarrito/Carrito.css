@@ -355,6 +355,63 @@
     width: 100%;
 }
 
+/* ─── Método de pago ─── */
+.metodo-pago {
+    border: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.metodo-pago legend {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding: 0;
+}
+
+.metodo-pago-opcion {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #ebebeb;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    background-color: #fff;
+    color: #111;
+}
+
+.metodo-pago-opcion.activo {
+    border-color: #111;
+}
+
+.envio-form .metodo-pago-opcion input {
+    padding: 0;
+    margin: 3px 0 0;
+    accent-color: #111;
+}
+
+.metodo-pago-opcion span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.metodo-pago-opcion strong {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.metodo-pago-opcion small {
+    font-size: 0.72rem;
+    color: #777;
+}
+
 .envio-botones {
     display: flex;
     gap: 12px;

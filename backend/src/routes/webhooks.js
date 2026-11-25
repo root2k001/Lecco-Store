@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import prisma from '../prisma.js';
+import { verificarFirmaWebhook, mercadoPagoHabilitado } from '../services/mercadoPagoService.js';
+import { sincronizarPagoMercadoPago } from '../services/pagosPedido.js';
 
 const router = Router();
 
@@ -48,6 +50,40 @@ router.post('/brevo', async (req, res) => {
   } catch (error) {
     console.error('Error procesando webhook de Brevo:', error);
     // 500 → Brevo reintenta el envío
+    res.status(500).json({ error: 'Error procesando el webhook' });
+  }
+});
+
+/**
+ * POST /api/webhooks/mercadopago — Notificaciones de pagos de Mercado Pago.
+ * Formato webhook: ?data.id=123&type=payment (+ body { type, data: { id } }).
+ * Formato IPN antiguo: ?topic=payment&id=123.
+ * El estado del pago se consulta SIEMPRE a la API de MP (la notificación solo es un aviso).
+ */
+router.post('/mercadopago', async (req, res) => {
+  const tipo = req.body?.type || req.query.type || req.query.topic;
+  const pagoId = String(req.query['data.id'] || req.body?.data?.id || req.query.id || '');
+
+  const firmaOk = verificarFirmaWebhook({
+    firma: req.headers['x-signature'],
+    requestId: req.headers['x-request-id'],
+    dataId: pagoId
+  });
+  if (firmaOk === false) {
+    return res.status(401).json({ error: 'Firma inválida' });
+  }
+
+  // Otros eventos (merchant_order, etc.) se confirman sin procesar
+  if (tipo !== 'payment' || !/^\d{1,20}$/.test(pagoId) || !mercadoPagoHabilitado()) {
+    return res.status(200).json({ ignorado: true });
+  }
+
+  try {
+    const resultado = await sincronizarPagoMercadoPago(pagoId);
+    res.status(200).json({ procesado: Boolean(resultado) });
+  } catch (error) {
+    console.error('Error procesando webhook de Mercado Pago:', error);
+    // 500 → Mercado Pago reintenta la notificación
     res.status(500).json({ error: 'Error procesando el webhook' });
   }
 });

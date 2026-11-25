@@ -2,7 +2,9 @@ import { Router } from 'express';
 import pkg from '@prisma/client';
 import prisma from '../prisma.js';
 import { verifyToken, verifyAdmin, optionalToken } from '../middlewares/authMiddleware.js';
-import { crearPedidoSchema, actualizarEstadoPedidoSchema } from '../validators/pedidos.js';
+import { crearPedidoSchema, actualizarEstadoPedidoSchema, confirmarPagoSchema } from '../validators/pedidos.js';
+import { mercadoPagoHabilitado, crearPreferencia } from '../services/mercadoPagoService.js';
+import { sincronizarPagoMercadoPago } from '../services/pagosPedido.js';
 import { parseId } from '../validators/params.js';
 import { enviarEmail } from '../services/emailService.js';
 import { plantillaEstadoPedido } from '../services/emailTemplates.js';
@@ -18,6 +20,27 @@ const crearPedidoLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 15,
   message: { error: 'Demasiados pedidos en poco tiempo. Intenta de nuevo más tarde.' }
+});
+
+// Consultas de estado al volver de Mercado Pago
+const confirmarPagoLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: 'Demasiadas consultas de pago. Intenta de nuevo más tarde.' }
+});
+
+// Devuelve el pedido a su estado previo si no se pudo generar el pago (libera el stock)
+const anularPedidoSinPago = (pedido) => prisma.$transaction(async (tx) => {
+  for (const item of pedido.items) {
+    await tx.producto.update({
+      where: { id: item.productoId },
+      data: { stock: { increment: item.cantidad } }
+    });
+  }
+  await tx.pedido.update({
+    where: { id: pedido.id },
+    data: { estado: 'cancelado', estadoPago: 'rechazado' }
+  });
 });
 
 // Mapa de estados para el email
@@ -36,7 +59,7 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
   if (!validacion.success) {
     return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de pedido inválidos' });
   }
-  const { items, direccion, ciudad, codigoPostal, telefono, origenCampana } = validacion.data;
+  const { items, direccion, ciudad, codigoPostal, telefono, origenCampana, metodoPago } = validacion.data;
   // 'items' debe ser un arreglo: [{ productoId: 1, cantidad: 2 }]
   // El precio y total se calculan desde la base de datos (NUNCA del frontend)
 
@@ -44,12 +67,20 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
     return res.status(400).json({ error: 'El pedido debe contener al menos un producto.' });
   }
 
+  if (metodoPago === 'mercadopago' && !mercadoPagoHabilitado()) {
+    return res.status(503).json({ error: 'El pago con Mercado Pago no está disponible en este momento. Puedes finalizar tu pedido por WhatsApp.' });
+  }
+
+  // Nombres y precios de BD para el detalle de la preferencia de Mercado Pago
+  let lineasPago = [];
+
   try {
     // Todo dentro de una transacción para evitar race conditions (TOCTOU)
-    const nuevoPedido = await prisma.$transaction(async (tx) => {
+    let nuevoPedido = await prisma.$transaction(async (tx) => {
       // Decimal de Prisma: evita errores de coma flotante al sumar importes
       let totalCalculado = new Prisma.Decimal(0);
       const itemsParaCrear = [];
+      lineasPago = [];
 
       for (const item of items) {
         // 1. Obtener el producto con su precio REAL desde la BD
@@ -73,6 +104,7 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
           precioUnit: producto.precio,
           color: producto.color // copia del color al momento de la compra
         });
+        lineasPago.push({ productoId: producto.id, nombre: producto.nombre, cantidad: item.cantidad, precioUnit: producto.precio });
 
         totalCalculado = totalCalculado.add(producto.precio.mul(item.cantidad));
 
@@ -94,6 +126,7 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
         ciudad,
         codigoPostal,
         telefono,
+        metodoPago,
         items: { create: itemsParaCrear }
       };
 
@@ -116,7 +149,25 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
       return pedido;
     });
 
-    res.status(201).json({ message: 'Pedido procesado exitosamente', pedido: nuevoPedido });
+    // Mercado Pago: se genera el checkout con los precios de la BD
+    let initPoint;
+    if (metodoPago === 'mercadopago') {
+      try {
+        const preferencia = await crearPreferencia(nuevoPedido, lineasPago);
+        nuevoPedido = await prisma.pedido.update({
+          where: { id: nuevoPedido.id },
+          data: { mpPreferenciaId: preferencia.id },
+          include: { items: true }
+        });
+        initPoint = preferencia.initPoint;
+      } catch (error) {
+        console.error(`Error creando preferencia de Mercado Pago (pedido #${nuevoPedido.id}):`, error);
+        await anularPedidoSinPago(nuevoPedido).catch(e => console.error('Error anulando pedido sin pago:', e));
+        return res.status(502).json({ error: 'No se pudo iniciar el pago con Mercado Pago. Intenta de nuevo o finaliza tu pedido por WhatsApp.' });
+      }
+    }
+
+    res.status(201).json({ message: 'Pedido procesado exitosamente', pedido: nuevoPedido, ...(initPoint ? { initPoint } : {}) });
 
     // Brevo (fire-and-forget, después de responder): estadísticas del cliente y evento post-compra
     notificarPedidoCreado(nuevoPedido);
@@ -129,6 +180,33 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
     }
 
     res.status(500).json({ error: 'Hubo un error al procesar el pedido' });
+  }
+});
+
+// Métodos de pago disponibles (el frontend oculta Mercado Pago si no está configurado)
+router.get('/metodos-pago', (req, res) => {
+  res.json({ whatsapp: true, mercadopago: mercadoPagoHabilitado() });
+});
+
+// Retorno desde Mercado Pago: consulta el pago en MP y actualiza el pedido (respaldo del webhook)
+router.post('/pago/confirmar', confirmarPagoLimiter, async (req, res) => {
+  if (!mercadoPagoHabilitado()) {
+    return res.status(503).json({ error: 'Mercado Pago no está configurado.' });
+  }
+  const validacion = confirmarPagoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'ID de pago inválido.' });
+  }
+
+  try {
+    const resultado = await sincronizarPagoMercadoPago(validacion.data.pagoId);
+    if (!resultado) {
+      return res.status(404).json({ error: 'No se encontró un pedido asociado a este pago.' });
+    }
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error confirmando pago de Mercado Pago:', error);
+    res.status(502).json({ error: 'No se pudo verificar el pago con Mercado Pago.' });
   }
 });
 

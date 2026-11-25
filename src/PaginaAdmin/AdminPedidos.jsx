@@ -1,6 +1,30 @@
 import { useState, useMemo, Fragment } from 'react';
 import ExportCSV from './ExportCSV';
 
+// Colores del estado de pago (solo aplica a pedidos con Mercado Pago)
+const ESTADO_PAGO_COLORES = {
+  aprobado: { color: '#065f46', bg: '#d1fae5' },
+  pendiente: { color: '#92400e', bg: '#fef3c7' },
+  rechazado: { color: '#991b1b', bg: '#fee2e2' },
+  reembolsado: { color: '#475569', bg: '#f1f5f9' },
+  revision: { color: '#9a3412', bg: '#ffedd5' }
+};
+
+function CeldaPago({ pedido }) {
+  if (pedido.metodoPago !== 'mercadopago') {
+    return <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>WhatsApp</span>;
+  }
+  const c = ESTADO_PAGO_COLORES[pedido.estadoPago] || ESTADO_PAGO_COLORES.pendiente;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+      <span style={{ fontSize: '12px', color: '#0284c7', fontWeight: 600 }}>Mercado Pago</span>
+      <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '8px', width: 'fit-content', color: c.color, background: c.bg }}>
+        {pedido.estadoPago}
+      </span>
+    </div>
+  );
+}
+
 function AdminPedidos({ pedidos, onReload }) {
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState('todos');
@@ -70,6 +94,8 @@ function AdminPedidos({ pedidos, onReload }) {
     { label: 'Fecha', accessor: p => new Date(p.creadoEn).toLocaleDateString() },
     { label: 'Total', accessor: p => p.total },
     { label: 'Estado', accessor: p => p.estado },
+    { label: 'Método de pago', accessor: p => p.metodoPago || 'whatsapp' },
+    { label: 'Estado de pago', accessor: p => (p.metodoPago === 'mercadopago' ? p.estadoPago : '') },
     { label: 'Dirección', accessor: p => p.direccion || '' },
     { label: 'Ciudad', accessor: p => p.ciudad || '' }
   ];
@@ -119,6 +145,7 @@ function AdminPedidos({ pedidos, onReload }) {
               <th>Fecha</th>
               <th>Total</th>
               <th>Dirección</th>
+              <th>Pago</th>
               <th>Estado</th>
               <th>Acción</th>
             </tr>
@@ -149,6 +176,7 @@ function AdminPedidos({ pedidos, onReload }) {
                   <td>{new Date(pedido.creadoEn).toLocaleDateString()}</td>
                   <td className="td-precio">S/ {Number(pedido.total).toLocaleString('es-PE')}</td>
                   <td>{pedido.direccion ? `${pedido.direccion}, ${pedido.ciudad}` : '—'}</td>
+                  <td><CeldaPago pedido={pedido} /></td>
                   <td>
                     <span className={`estado-badge ${pedido.estado}`}>{pedido.estado}</span>
                   </td>
@@ -185,7 +213,7 @@ function AdminPedidos({ pedidos, onReload }) {
                 </tr>
                 {expandido === pedido.id && pedido.items && (
                   <tr key={`det-${pedido.id}`} className="pedido-detalle-row">
-                    <td colSpan="8">
+                    <td colSpan="9">
                       <div className="pedido-detalle">
                         <p className="pedido-detalle-titulo">Productos del pedido</p>
                         <div className="pedido-items-grid">

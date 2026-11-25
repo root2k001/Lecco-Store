@@ -73,6 +73,10 @@ model Pedido {
   creadoEn     DateTime     @default(now())
   items        ItemPedido[]
   origenCampana String? // slug de la campaña (UTM) que originó la venta
+  metodoPago      String  @default("whatsapp")  // whatsapp | mercadopago
+  estadoPago      String  @default("pendiente") // pendiente | aprobado | rechazado | reembolsado | revision
+  mpPreferenciaId String? // preferencia de Checkout Pro de Mercado Pago
+  mpPagoId        String? // último pago de Mercado Pago asociado
 
   @@index([usuarioId, creadoEn]) // /mis-pedidos
   @@index([creadoEn])            // listado admin y pedidos de hoy

@@ -13,7 +13,16 @@ export const crearPedidoSchema = z.object({
   codigoPostal: z.string().trim().max(20, 'El código postal es demasiado largo.').optional().nullable().or(z.literal('')),
   telefono: z.string().trim().max(30, 'El teléfono es demasiado largo.').optional().nullable().or(z.literal('')),
   // utm_campaign con el que llegó el cliente (ej. desde un correo de Brevo). Si no es válido, se ignora.
-  origenCampana: z.string().trim().toLowerCase().max(60).regex(SLUG_REGEX).optional().nullable().catch(null)
+  origenCampana: z.string().trim().toLowerCase().max(60).regex(SLUG_REGEX).optional().nullable().catch(null),
+  // Cómo se paga: coordinando por WhatsApp (por defecto) o con Mercado Pago
+  metodoPago: z.enum(['whatsapp', 'mercadopago'], { message: 'Método de pago no válido.' }).default('whatsapp')
+});
+
+// Retorno desde Mercado Pago: el id del pago se consulta en MP, nunca se confía en el estado del cliente
+export const confirmarPagoSchema = z.object({
+  pagoId: z.union([z.string(), z.number()])
+    .transform(v => String(v).trim())
+    .pipe(z.string().regex(/^\d{1,20}$/, 'ID de pago inválido.'))
 });
 
 export const actualizarEstadoPedidoSchema = z.object({

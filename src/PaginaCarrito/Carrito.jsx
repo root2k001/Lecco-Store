@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import './Carrito.css'
 import { useCarrito } from '../context/CarritoContext'
@@ -22,6 +22,19 @@ function Carrito() {
         codigoPostal: '',
         telefono: ''
     })
+
+    // Método de pago: 'whatsapp' (coordinar por chat) o 'mercadopago' (pago en línea)
+    const [metodoPago, setMetodoPago] = useState('whatsapp')
+    const [mpDisponible, setMpDisponible] = useState(false)
+
+    useEffect(() => {
+        let activo = true
+        fetch('/api/pedidos/metodos-pago')
+            .then(res => (res.ok ? res.json() : null))
+            .then(data => { if (activo) setMpDisponible(Boolean(data?.mercadopago)) })
+            .catch(() => { })
+        return () => { activo = false }
+    }, [])
 
     const total = carrito.reduce((acc, item) => acc + (item.price * item.quantity), 0)
     const cantidadTotal = carrito.reduce((acc, item) => acc + item.quantity, 0)
@@ -88,7 +101,8 @@ function Carrito() {
                     codigoPostal: envioDatos.codigoPostal,
                     telefono: envioDatos.telefono,
                     // Campaña de la que vino el cliente (utm_campaign), si la hay
-                    origenCampana: obtenerCampanaOrigen()
+                    origenCampana: obtenerCampanaOrigen(),
+                    metodoPago
                 })
             })
 
@@ -99,6 +113,14 @@ function Carrito() {
 
             const data = await response.json()
             const numeroPedido = data.pedido?.id || '—'
+
+            // Mercado Pago: redirigir al checkout (el resultado se muestra en /pago/resultado)
+            if (metodoPago === 'mercadopago') {
+                if (!data.initPoint) throw new Error('No se pudo iniciar el pago con Mercado Pago.')
+                vaciarCarrito()
+                window.location.assign(data.initPoint)
+                return
+            }
 
             // 2. Abrir WhatsApp con el resumen del pedido
             const mensaje = generarMensajeWhatsApp(numeroPedido)
@@ -253,10 +275,37 @@ function Carrito() {
                                         value={envioDatos.telefono} onChange={e => setEnvioDatos({ ...envioDatos, telefono: e.target.value })}
                                     />
                                 </div>
+                                <fieldset className="metodo-pago">
+                                    <legend>Método de pago</legend>
+                                    <label className={`metodo-pago-opcion ${metodoPago === 'whatsapp' ? 'activo' : ''}`}>
+                                        <input
+                                            type="radio" name="metodoPago" value="whatsapp"
+                                            checked={metodoPago === 'whatsapp'} onChange={() => setMetodoPago('whatsapp')}
+                                        />
+                                        <span>
+                                            <strong>WhatsApp</strong>
+                                            <small>Coordina el pago directamente con nosotros</small>
+                                        </span>
+                                    </label>
+                                    {mpDisponible && (
+                                        <label className={`metodo-pago-opcion ${metodoPago === 'mercadopago' ? 'activo' : ''}`}>
+                                            <input
+                                                type="radio" name="metodoPago" value="mercadopago"
+                                                checked={metodoPago === 'mercadopago'} onChange={() => setMetodoPago('mercadopago')}
+                                            />
+                                            <span>
+                                                <strong>Mercado Pago</strong>
+                                                <small>Paga en línea con tarjeta u otros medios</small>
+                                            </span>
+                                        </label>
+                                    )}
+                                </fieldset>
                                 <div className="envio-botones">
                                     <button type="button" className="btn-volver" onClick={() => setMostrarEnvio(false)}>Atrás</button>
                                     <button type="submit" className="btn-checkout confirmar" disabled={procesando}>
-                                        {procesando ? 'Procesando...' : 'Confirmar Pedido'}
+                                        {procesando
+                                            ? 'Procesando...'
+                                            : metodoPago === 'mercadopago' ? 'Pagar con Mercado Pago' : 'Confirmar por WhatsApp'}
                                     </button>
                                 </div>
                             </form>

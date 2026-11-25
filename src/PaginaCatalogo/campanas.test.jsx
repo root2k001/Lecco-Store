@@ -139,11 +139,12 @@ describe('Atribución de ventas (utm_campaign)', () => {
         fireEvent.change(screen.getByPlaceholderText('Ciudad'), { target: { value: 'Lima' } });
         fireEvent.change(screen.getByPlaceholderText('C.P.'), { target: { value: '15001' } });
         fireEvent.change(screen.getByPlaceholderText('Teléfono'), { target: { value: '999999999' } });
-        fireEvent.click(screen.getByText('Confirmar Pedido'));
+        fireEvent.click(screen.getByText('Confirmar por WhatsApp'));
 
         await waitFor(() => expect(urls()).toContain('/api/pedidos'));
         const [, opciones] = globalThis.fetch.mock.calls.find(([url]) => url === '/api/pedidos');
         expect(JSON.parse(opciones.body).origenCampana).toBe('verano-2027');
+        expect(JSON.parse(opciones.body).metodoPago).toBe('whatsapp');
         abrir.mockRestore();
     });
 });
