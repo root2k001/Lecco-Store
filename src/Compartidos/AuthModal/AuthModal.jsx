@@ -7,6 +7,8 @@ const AuthModal = ({ onClose, onSuccess }) => {
     const [nombre, setNombre] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    // Consentimiento de marketing: sin marcar por defecto (Ley 29733)
+    const [aceptaMarketing, setAceptaMarketing] = useState(false);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
 
@@ -22,7 +24,7 @@ const AuthModal = ({ onClose, onSuccess }) => {
                 await login(email, password);
                 onSuccess(); // El login fue exitoso, continuamos con la acción
             } else {
-                await registro(nombre, email, password);
+                await registro(nombre, email, password, aceptaMarketing);
                 // Después de registro exitoso, iniciamos sesión automáticamente para fluidez
                 await login(email, password);
                 onSuccess();
@@ -73,6 +75,16 @@ const AuthModal = ({ onClose, onSuccess }) => {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                     </div>
+                    {!isLogin && (
+                        <label className="check-marketing">
+                            <input
+                                type="checkbox"
+                                checked={aceptaMarketing}
+                                onChange={(e) => setAceptaMarketing(e.target.checked)}
+                            />
+                            <span>Quiero recibir ofertas y novedades de Lecco por correo. Puedo darme de baja cuando quiera.</span>
+                        </label>
+                    )}
                     
                     <button type="submit" className="btn-auth-submit" disabled={loading}>
                         {loading ? 'Cargando...' : (isLogin ? 'Ingresar' : 'Registrarme')}

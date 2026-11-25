@@ -8,6 +8,7 @@ import { registroSchema, loginSchema, perfilSchema } from '../validators/auth.js
 import crypto from 'crypto';
 import { enviarEmail } from '../services/emailService.js';
 import { plantillaBienvenida } from '../services/emailTemplates.js';
+import { sincronizarContacto } from '../services/brevoService.js';
 
 const router = Router();
 
@@ -44,7 +45,7 @@ router.post('/registro', registroLimiter, async (req, res) => {
       return res.status(400).json({ error: result.error.issues[0]?.message || 'Datos inválidos' });
     }
 
-    const { nombre, email, password } = result.data;
+    const { nombre, email, password, aceptaMarketing = false } = result.data;
 
     // 2. Verificar si el correo ya existe
     const usuarioExistente = await prisma.usuario.findUnique({
@@ -65,8 +66,13 @@ router.post('/registro', registroLimiter, async (req, res) => {
         nombre,
         email,
         password: passwordEncriptada,
+        aceptaMarketing,
+        consentimientoEn: aceptaMarketing ? new Date() : null
       }
     });
+
+    // Brevo (fire-and-forget): lista Clientes y, solo con consentimiento, Newsletter
+    sincronizarContacto({ email, nombre, origen: 'registro', enNewsletter: aceptaMarketing || undefined });
 
     // 5. Enviar email de bienvenida (fire-and-forget, no bloquea el registro)
     enviarEmail({
@@ -78,7 +84,7 @@ router.post('/registro', registroLimiter, async (req, res) => {
     // 6. Devolver éxito sin exponer la contraseña
     res.status(201).json({
       message: 'Usuario registrado exitosamente',
-      usuario: { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email, rol: nuevoUsuario.rol }
+      usuario: { id: nuevoUsuario.id, nombre: nuevoUsuario.nombre, email: nuevoUsuario.email, rol: nuevoUsuario.rol, aceptaMarketing: nuevoUsuario.aceptaMarketing }
     });
   } catch (error) {
     console.error(error);
@@ -131,7 +137,7 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     res.json({
       message: 'Inicio de sesión exitoso',
-      usuario: { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol }
+      usuario: { id: usuario.id, nombre: usuario.nombre, email: usuario.email, rol: usuario.rol, aceptaMarketing: usuario.aceptaMarketing }
     });
   } catch (error) {
     console.error(error);
@@ -204,7 +210,7 @@ router.get('/me', verifyToken, async (req, res) => {
   try {
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.usuario.id },
-      select: { id: true, nombre: true, email: true, rol: true } // Excluimos password explícitamente
+      select: { id: true, nombre: true, email: true, rol: true, aceptaMarketing: true } // Excluimos password explícitamente
     });
 
     if (!usuario) {
@@ -245,8 +251,14 @@ router.put('/perfil', verifyToken, async (req, res) => {
       return res.status(400).json({ error: result.error.issues[0]?.message || 'Datos inválidos' });
     }
 
-    const { nombre, email, password } = result.data;
+    const { nombre, email, password, aceptaMarketing } = result.data;
     const dataToUpdate = {};
+
+    // Cambio de consentimiento de marketing (se guarda la fecha al aceptarlo)
+    if (aceptaMarketing !== undefined) {
+      dataToUpdate.aceptaMarketing = aceptaMarketing;
+      dataToUpdate.consentimientoEn = aceptaMarketing ? new Date() : null;
+    }
 
     if (nombre) dataToUpdate.nombre = nombre;
     if (email) dataToUpdate.email = email;
@@ -270,13 +282,21 @@ router.put('/perfil', verifyToken, async (req, res) => {
       data: dataToUpdate
     });
 
+    // Brevo (fire-and-forget): nombre y, si cambió, la suscripción a la Newsletter
+    sincronizarContacto({
+      email: usuarioActualizado.email,
+      nombre: usuarioActualizado.nombre,
+      enNewsletter: aceptaMarketing
+    });
+
     res.json({
       message: 'Perfil actualizado exitosamente',
       usuario: {
         id: usuarioActualizado.id,
         nombre: usuarioActualizado.nombre,
         email: usuarioActualizado.email,
-        rol: usuarioActualizado.rol
+        rol: usuarioActualizado.rol,
+        aceptaMarketing: usuarioActualizado.aceptaMarketing
       }
     });
   } catch (error) {

@@ -6,6 +6,7 @@ import AdminPedidos from './AdminPedidos';
 import AdminProductos from './AdminProductos';
 import AdminMensajes from './AdminMensajes';
 import AdminHistorial from './AdminHistorial';
+import AdminCampanas from './AdminCampanas';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
@@ -106,6 +107,15 @@ function AdminDashboard() {
       )
     },
     {
+      id: 'campanas',
+      label: 'Campañas',
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 11l18-8v18L3 13z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
+        </svg>
+      )
+    },
+    {
       id: 'historial',
       label: 'Historial',
       icon: (
@@ -190,6 +200,10 @@ function AdminDashboard() {
 
         {activeTab === 'mensajes' && (
           <AdminMensajes />
+        )}
+
+        {activeTab === 'campanas' && (
+          <AdminCampanas />
         )}
 
         {activeTab === 'historial' && (

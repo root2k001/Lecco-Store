@@ -490,6 +490,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  cursor: pointer; /* antes lo daba el <Link>; ahora la tarjeta abre el detalle */
 }
 
 /* Centra las tarjetas cuando son pocas (1 a 4) y se desactiva solo al haber scroll */

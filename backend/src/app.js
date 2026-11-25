@@ -10,6 +10,9 @@ import historialRoutes from './routes/historial.js';
 
 import statsRoutes from './routes/stats.js';
 import uploadRoutes from './routes/upload.js';
+import newsletterRoutes from './routes/newsletter.js';
+import webhooksRoutes from './routes/webhooks.js';
+import campanasRoutes from './routes/campanas.js';
 
 const app = express();
 
@@ -53,6 +56,9 @@ app.use('/api/pedidos', pedidosRoutes);
 app.use('/api/historial', historialRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/newsletter', newsletterRoutes);
+app.use('/api/webhooks', webhooksRoutes);
+app.use('/api/campanas', campanasRoutes);
 
 
 // Ruta de prueba

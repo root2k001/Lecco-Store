@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useCallback } from 'react';
+import { createContext, useState, useContext, useCallback, useMemo } from 'react';
 import './Toast.css';
 
 const ToastContext = createContext();
@@ -21,8 +21,11 @@ export const ToastProvider = ({ children }) => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
+  // Valor estable: mostrar/ocultar un toast no re-renderiza a todos los consumidores
+  const valor = useMemo(() => ({ addToast }), [addToast]);
+
   return (
-    <ToastContext.Provider value={{ addToast }}>
+    <ToastContext.Provider value={valor}>
       {children}
       
       <div className="toast-container">

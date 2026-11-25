@@ -1,4 +1,4 @@
-import { useState, useContext, createContext, useEffect, useMemo } from 'react'
+import { useState, useContext, createContext, useEffect, useMemo, useCallback } from 'react'
 import { useToast } from './ToastContext'
 
 export const CarritoContext = createContext()
@@ -29,11 +29,17 @@ export function CarritoProvider({ children }) {
         localStorage.setItem('carrito-lecco', JSON.stringify(carrito))
     }, [carrito])
 
-    const agregarAlCarrito = (producto) => {
-        let added = false;
-        let noStock = false;
+    const agregarAlCarrito = useCallback((producto) => {
+        // El aviso se decide con el carrito actual: React no garantiza ejecutar el
+        // updater de setCarrito al instante, así que no se puede leer un flag puesto dentro.
+        const maxStockActual = producto.stock !== undefined ? producto.stock : (producto.quantity !== undefined ? producto.quantity : Infinity)
+        const cantidadActual = carrito.find(p => p.id === producto.id)?.quantity ?? 0
+        if (cantidadActual >= maxStockActual) {
+            addToast('No hay más stock disponible', 'error');
+            return
+        }
 
-        //funcion que setea el nuevo estado del carrito
+        //funcion que setea el nuevo estado del carrito (vuelve a validar el stock por seguridad)
         setCarrito(prev => {
             //constante  de validacion para  revisar si el  producto  ya  esta en el  carrito
             const existenteProducto = prev.find(p => p.id === producto.id)
@@ -42,37 +48,29 @@ export function CarritoProvider({ children }) {
 
             if (existenteProducto) {
                 if (existenteProducto.quantity >= maxStock) {
-                    noStock = true;
                     return prev
                 }
-                added = true;
                 return prev.map(p =>
                     p.id === producto.id ? { ...p, quantity: p.quantity + 1 } : p
                 )
             }
 
             if (maxStock <= 0) {
-                noStock = true;
                 return prev
             }
 
-            added = true;
             return [...prev, { ...producto, quantity: 1, stock: maxStock }]
         });
 
-        if (added) {
-            addToast('Producto añadido al carrito', 'success');
-        } else if (noStock) {
-            addToast('No hay más stock disponible', 'error');
-        }
-    }
+        addToast('Producto añadido al carrito', 'success');
+    }, [carrito, addToast])
 
-    const eliminarDelCarrito = (id) => {
+    const eliminarDelCarrito = useCallback((id) => {
         setCarrito(prev => prev.filter(p => p.id !== id))
         addToast('Producto eliminado del carrito', 'info')
-    }
+    }, [addToast])
 
-    const incrementarCantidad = (id) => {
+    const incrementarCantidad = useCallback((id) => {
         setCarrito(prev =>
             prev.map(p => {
                 if (p.id === id) {
@@ -85,9 +83,9 @@ export function CarritoProvider({ children }) {
                 return p
             })
         )
-    }
+    }, [])
 
-    const decrementarCantidad = (id) => {
+    const decrementarCantidad = useCallback((id) => {
         setCarrito(prev =>
             prev.map(p => {
                 if (p.id === id) {
@@ -98,11 +96,11 @@ export function CarritoProvider({ children }) {
                 return p
             }).filter(p => p.quantity > 0)
         )
-    }
+    }, [])
 
-    const vaciarCarrito = () => {
+    const vaciarCarrito = useCallback(() => {
         setCarrito([])
-    }
+    }, [])
 
     const valorCarrito = useMemo(() => ({
         carrito,
@@ -111,7 +109,7 @@ export function CarritoProvider({ children }) {
         incrementarCantidad,
         decrementarCantidad,
         vaciarCarrito
-    }), [carrito])
+    }), [carrito, agregarAlCarrito, eliminarDelCarrito, incrementarCantidad, decrementarCantidad, vaciarCarrito])
 
     return (
         <CarritoContext.Provider value={valorCarrito}>

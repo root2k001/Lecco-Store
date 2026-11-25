@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useCarrito } from '../../context/CarritoContext';
 import { useFavoritos } from '../../context/FavoritosContext';
 import './Productos.css';
 import DetalleProducto from '../DetallesProductos/DetallesProductos.jsx';
+import { mapearProducto } from '../mapearProducto.js';
 
 // Diccionario de referencia para muestras visuales de colores habituales
 const DICCIONARIO_COLORES_HEX = {
@@ -53,11 +55,57 @@ const DICCIONARIO_COLORES_HEX = {
     beige: '#f5f5dc'
 };
 
-const ProductosList = ({ sale = false }) => {
-    const [productos, setProductos] = useState([]);
-    const [coloresBD, setColoresBD] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+// ── Peticiones (React Query cachea por queryKey: volver a /Sale o /Lentes no repite la petición) ──
+const ITEMS_POR_PAGINA = 16;
+
+const obtenerColores = async () => {
+    const res = await fetch('/api/productos/colores');
+    if (!res.ok) throw new Error('Error cargando lista de colores');
+    return res.json();
+};
+
+const obtenerProductos = async ({ pagina, orden, colorSeleccionado, sale, campana }) => {
+    const params = new URLSearchParams({
+        page: String(pagina),
+        limit: String(ITEMS_POR_PAGINA),
+        orden
+    });
+
+    if (colorSeleccionado) {
+        params.append('color', colorSeleccionado);
+    }
+
+    // En la pestaña /Sale solo se piden productos en oferta
+    if (sale) {
+        params.append('sale', 'true');
+    }
+
+    // En /campanas/:slug solo se piden los productos de esa campaña
+    if (campana) {
+        params.append('campana', campana);
+    }
+
+    const response = await fetch(`/api/productos?${params.toString()}`);
+
+    if (!response.ok) {
+        throw new Error('Error al cargar los productos desde el servidor');
+    }
+
+    const data = await response.json();
+    return {
+        productos: (data.productos || data).map(mapearProducto),
+        totalPaginas: data.totalPages ?? 1,
+        totalProductos: data.total ?? 0
+    };
+};
+// ───────────────────────────────────────────────────────────────────────────
+
+const ProductosList = ({
+    sale = false,
+    campana = null,
+    titulo = 'VER TODOS LOS PRODUCTOS',
+    subtitulo = 'Descubre nuestra exclusiva colección de gafas con acabados de lujo para un estilo único.'
+}) => {
     const [productoSeleccionado, setProductoSeleccionado] = useState(null);
     const [orden, setOrden] = useState('relevante');
     const [colorSeleccionado, setColorSeleccionado] = useState(null);
@@ -65,88 +113,35 @@ const ProductosList = ({ sale = false }) => {
 
     // ── Paginación (16 productos por página) ───────────────────────────────────
     const [pagina, setPagina] = useState(1);
-    const [totalPaginas, setTotalPaginas] = useState(1);
-    const [totalProductos, setTotalProductos] = useState(0);
-    const ITEMS_POR_PAGINA = 16;
     // ───────────────────────────────────────────────────────────────────────────
 
     const { agregarAlCarrito } = useCarrito();
     const { toggleFavorito, esFavorito } = useFavoritos();
 
-    // Cargar todos los colores únicos existentes en la BD una sola vez
-    useEffect(() => {
-        const cargarColores = async () => {
-            try {
-                const res = await fetch('/api/productos/colores');
-                if (res.ok) {
-                    const listaColores = await res.json();
-                    setColoresBD(listaColores);
-                }
-            } catch (err) {
-                console.error('Error cargando lista de colores:', err);
-            }
-        };
-        cargarColores();
-    }, []);
+    // Colores únicos existentes en la BD (cambian poco: se cachean 10 min)
+    const { data: coloresBD = [] } = useQuery({
+        queryKey: ['productos', 'colores'],
+        queryFn: obtenerColores,
+        staleTime: 10 * 60 * 1000
+    });
 
-    // Cargar productos paginados, filtrados y ordenados desde el servidor
-    useEffect(() => {
-        const cargarProductos = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+    // Productos paginados, filtrados y ordenados desde el servidor.
+    // placeholderData mantiene la página anterior visible mientras carga la siguiente.
+    const {
+        data,
+        isPending: loading,
+        error: errorQuery
+    } = useQuery({
+        queryKey: ['productos', { pagina, orden, colorSeleccionado, sale, campana }],
+        queryFn: () => obtenerProductos({ pagina, orden, colorSeleccionado, sale, campana }),
+        placeholderData: keepPreviousData,
+        staleTime: 60 * 1000
+    });
 
-                const params = new URLSearchParams({
-                    page: String(pagina),
-                    limit: String(ITEMS_POR_PAGINA),
-                    orden
-                });
-
-                if (colorSeleccionado) {
-                    params.append('color', colorSeleccionado);
-                }
-
-                // En la pestaña /Sale solo se piden productos en oferta
-                if (sale) {
-                    params.append('sale', 'true');
-                }
-
-                const response = await fetch(`/api/productos?${params.toString()}`);
-
-                if (!response.ok) {
-                    throw new Error('Error al cargar los productos desde el servidor');
-                }
-
-                const data = await response.json();
-                const productosMapeados = (data.productos || data).map(p => ({
-                    id: p.id,
-                    name: p.nombre,
-                    price: Number(p.precio),
-                    img: p.imagen || 'en proceso',
-                    gender: p.genero,
-                    color: p.color ? String(p.color).trim() : null,
-                    stock: p.stock,
-                    quantity: p.stock,
-                    descripcion: p.descripcion,
-                    imagenesAdicionales: p.imagenesAdicionales || [],
-                    videos: p.videos || []
-                }));
-
-                setProductos(productosMapeados);
-
-                if (data.totalPages !== undefined) {
-                    setTotalPaginas(data.totalPages);
-                    setTotalProductos(data.total);
-                }
-            } catch (err) {
-                setError(err.message || 'Error al cargar los productos');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        cargarProductos();
-    }, [pagina, colorSeleccionado, orden, sale]);
+    const productos = data?.productos ?? [];
+    const totalPaginas = data?.totalPaginas ?? 1;
+    const totalProductos = data?.totalProductos ?? 0;
+    const error = errorQuery ? (errorQuery.message || 'Error al cargar los productos') : null;
 
     // Formatear colores únicos sin duplicar por mayúsculas/minúsculas
     const coloresDisponibles = useMemo(() => {
@@ -239,9 +234,9 @@ const ProductosList = ({ sale = false }) => {
             <section className='contenido'>
                 <main className='collections'>
                     <div className="coleccion-header-seccion">
-                        <h1 className="coleccion-titulo">VER TODOS LOS PRODUCTOS</h1>
+                        <h1 className="coleccion-titulo">{titulo}</h1>
                         <p className="coleccion-subtitulo">
-                            Descubre nuestra exclusiva colección de gafas con acabados de lujo para un estilo único.
+                            {subtitulo}
                         </p>
                     </div>
 

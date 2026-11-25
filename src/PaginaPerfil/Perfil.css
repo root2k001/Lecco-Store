@@ -413,3 +413,21 @@
   }
 }
 /* ─────────────────────────────────────────────────────────────────────────── */
+
+/* Consentimiento de marketing (Brevo) */
+.check-marketing {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.4;
+  cursor: pointer;
+  margin: 4px 0 12px;
+}
+
+.check-marketing input {
+  width: auto;
+  margin-top: 2px;
+  accent-color: #1a1a1a;
+}

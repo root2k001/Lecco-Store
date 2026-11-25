@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SLUG_REGEX } from './campanas.js';
 
 export const crearPedidoSchema = z.object({
   items: z.array(
@@ -10,7 +11,9 @@ export const crearPedidoSchema = z.object({
   direccion: z.string().trim().max(255, 'La dirección es demasiado larga.').optional().nullable().or(z.literal('')),
   ciudad: z.string().trim().max(100, 'La ciudad es demasiado larga.').optional().nullable().or(z.literal('')),
   codigoPostal: z.string().trim().max(20, 'El código postal es demasiado largo.').optional().nullable().or(z.literal('')),
-  telefono: z.string().trim().max(30, 'El teléfono es demasiado largo.').optional().nullable().or(z.literal(''))
+  telefono: z.string().trim().max(30, 'El teléfono es demasiado largo.').optional().nullable().or(z.literal('')),
+  // utm_campaign con el que llegó el cliente (ej. desde un correo de Brevo). Si no es válido, se ignora.
+  origenCampana: z.string().trim().toLowerCase().max(60).regex(SLUG_REGEX).optional().nullable().catch(null)
 });
 
 export const actualizarEstadoPedidoSchema = z.object({

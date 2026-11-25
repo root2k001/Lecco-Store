@@ -9,3 +9,13 @@ pnpm-debug.log*
 .git
 .gitignore
 
+
+# Scripts de mantenimiento puntuales (no necesarios para ejecutar la API)
+actualizar_gafas_blanco.js
+asignar_colores.js
+debug.js
+listar_mensajes.js
+restaurar.mjs
+
+# Tests
+test

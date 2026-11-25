@@ -4,6 +4,7 @@ import './Carrito.css'
 import { useCarrito } from '../context/CarritoContext'
 
 import AuthModal from '../Compartidos/AuthModal/AuthModal'
+import { obtenerCampanaOrigen } from '../utils/campanaOrigen.js'
 
 function Carrito() {
     const { carrito, eliminarDelCarrito, incrementarCantidad, decrementarCantidad, vaciarCarrito } = useCarrito()
@@ -85,7 +86,9 @@ function Carrito() {
                     direccion: envioDatos.direccion,
                     ciudad: envioDatos.ciudad,
                     codigoPostal: envioDatos.codigoPostal,
-                    telefono: envioDatos.telefono
+                    telefono: envioDatos.telefono,
+                    // Campaña de la que vino el cliente (utm_campaign), si la hay
+                    origenCampana: obtenerCampanaOrigen()
                 })
             })
 
@@ -125,7 +128,7 @@ function Carrito() {
                     <p><strong>{envioDatos.direccion}, {envioDatos.ciudad}</strong></p>
                     <p>se estara concretando la compra por whatsApp en un momento </p>
                     <br />
-                    <Link to="/Coleccion" className="btn-seguir-comprando" onClick={() => setCompraExitosa(false)}>
+                    <Link to="/Lentes" className="btn-seguir-comprando" onClick={() => setCompraExitosa(false)}>
                         Volver a la tienda
                     </Link>
                 </div>
@@ -141,7 +144,7 @@ function Carrito() {
                 <div className="carrito-vacio">
                     <span className="carrito-vacio-icono">🛒</span>
                     <p>Tu carrito está vacío</p>
-                    <Link to="/Coleccion" className="btn-seguir-comprando">
+                    <Link to="/Lentes" className="btn-seguir-comprando">
                         Ver colección
                     </Link>
                 </div>
@@ -225,7 +228,7 @@ function Carrito() {
                                 >
                                     Proceder al Pago
                                 </button>
-                                <Link to="/Coleccion" className="btn-seguir-comprando">
+                                <Link to="/Lentes" className="btn-seguir-comprando">
                                     Continuar Comprando
                                 </Link>
                             </>

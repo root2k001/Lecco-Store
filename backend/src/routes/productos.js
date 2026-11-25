@@ -2,6 +2,8 @@ import { Router } from 'express';
 import prisma from '../prisma.js';
 import { verifyToken, verifyAdmin } from '../middlewares/authMiddleware.js';
 import { crearProductoSchema, actualizarProductoSchema } from '../validators/productos.js';
+import { parseId } from '../validators/params.js';
+import { filtroCampanaVigente } from './campanas.js';
 
 const router = Router();
 
@@ -60,6 +62,11 @@ router.get('/', async (req, res) => {
     where.nuevosingresos = false;
   }
 
+  // Filtro opcional ?campana=verano-2027 (solo campañas activas y vigentes)
+  if (typeof req.query.campana === 'string' && req.query.campana.trim() !== '') {
+    where.campanas = { some: { slug: req.query.campana.trim().toLowerCase(), ...filtroCampanaVigente() } };
+  }
+
   // Filtro por color desde la base de datos (insensible a mayúsculas/minúsculas)
   if (req.query.color && req.query.color.trim() !== '') {
     where.color = {
@@ -102,10 +109,13 @@ router.get('/', async (req, res) => {
 
 // Obtener un producto por ID (Público)
 router.get('/:id', async (req, res) => {
-  const { id } = req.params;
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'ID de producto inválido' });
+  }
   try {
     const producto = await prisma.producto.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: id }
     });
     if (!producto) {
       return res.status(404).json({ error: 'Producto no encontrado' });
@@ -158,7 +168,10 @@ router.post('/', verifyToken, verifyAdmin, async (req, res) => {
 
 // Actualizar un producto (ej. para cambiar el stock o precio)
 router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
-  const { id } = req.params;
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'ID de producto inválido' });
+  }
 
   // Whitelist: solo estos campos pueden ser modificados
   const validacion = actualizarProductoSchema.safeParse(req.body);
@@ -183,7 +196,7 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
   if (nuevosingresos !== undefined) data.nuevosingresos = nuevosingresos;
   try {
     const productoPrevio = await prisma.producto.findUnique({
-      where: { id: parseInt(id) }
+      where: { id: id }
     });
 
     if (!productoPrevio) {
@@ -191,7 +204,7 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
     }
 
     const productoActualizado = await prisma.producto.update({
-      where: { id: parseInt(id) },
+      where: { id: id },
       data
     });
 
@@ -223,15 +236,18 @@ router.put('/:id', verifyToken, verifyAdmin, async (req, res) => {
 
 // Eliminar un producto
 router.delete('/:id', verifyToken, verifyAdmin, async (req, res) => {
-  const { id } = req.params;
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'ID de producto inválido' });
+  }
   try {
-    const producto = await prisma.producto.findUnique({ where: { id: parseInt(id) } });
+    const producto = await prisma.producto.findUnique({ where: { id: id } });
     if (!producto) {
       return res.status(404).json({ error: 'Producto no encontrado' });
     }
 
     await prisma.producto.delete({
-      where: { id: parseInt(id) }
+      where: { id: id }
     });
 
     await prisma.historialCambios.create({

@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import './index.css'
 import App from './App.jsx'
+import { capturarCampanaDeUrl } from './utils/campanaOrigen.js'
+
+// Guarda el utm_campaign de los enlaces de Brevo para atribuir la venta a la campaña
+capturarCampanaDeUrl()
 
 const queryClient = new QueryClient();
 

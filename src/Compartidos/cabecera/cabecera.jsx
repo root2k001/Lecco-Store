@@ -5,7 +5,9 @@ import { useCarrito } from '../../context/CarritoContext'
 import { useAuth } from '../../context/AuthContext'
 import { useFavoritos } from '../../context/FavoritosContext'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import AuthModal from '../AuthModal/AuthModal'
+import { CLAVE_CAMPANAS_ACTIVAS, obtenerCampanasActivas } from '../../utils/campanasApi.js'
 
 function Cabecera() {
     const { carrito, eliminarDelCarrito, agregarAlCarrito, incrementarCantidad, decrementarCantidad } = useCarrito()
@@ -15,6 +17,12 @@ function Cabecera() {
     const [mostrarModal, setMostrarModal] = useState(false)
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [menuMobileAbierto, setMenuMobileAbierto] = useState(false)
+    // Campañas vigentes: su pestaña solo aparece mientras están activas
+    const { data: campanasActivas = [] } = useQuery({
+        queryKey: CLAVE_CAMPANAS_ACTIVAS,
+        queryFn: obtenerCampanasActivas,
+        staleTime: 5 * 60 * 1000
+    })
 
     const toggleModal = () => setMostrarModal(!mostrarModal)
     const toggleMenuMobile = () => setMenuMobileAbierto(!menuMobileAbierto)
@@ -38,6 +46,12 @@ function Cabecera() {
                     <li>
                         <Link to="/Sale" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Sale</Link>
                     </li>
+
+                    {campanasActivas.map(campana => (
+                        <li key={campana.id}>
+                            <Link to={`/campanas/${campana.slug}`} className='menu-link' onClick={() => setMenuMobileAbierto(false)}>{campana.titulo}</Link>
+                        </li>
+                    ))}
 
                     <li>
                         <Link to="/Nosotros" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Nosotros</Link>

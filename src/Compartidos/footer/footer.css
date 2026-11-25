@@ -126,3 +126,77 @@
   color: #666;
   font-size: 0.85rem;
 }
+
+/* ── Newsletter (Brevo) ─────────────────────────────────────────────── */
+.footer-newsletter {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 320px;
+}
+
+.footer-newsletter label {
+  font-size: 0.85rem;
+  color: #c9a962;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.footer-newsletter-fila {
+  display: flex;
+  gap: 8px;
+}
+
+.footer-newsletter-fila input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #444;
+  background: #111;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.footer-newsletter-fila input:focus {
+  outline: none;
+  border-color: #c9a962;
+}
+
+.footer-newsletter-fila button {
+  padding: 10px 14px;
+  background: #c9a962;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.footer-newsletter-fila button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.footer-newsletter-mensaje {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.footer-newsletter-mensaje.exito { color: #86efac; }
+.footer-newsletter-mensaje.error { color: #fca5a5; }
+
+.footer-newsletter-legal {
+  font-size: 0.75rem;
+  color: #777;
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .footer-newsletter {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}

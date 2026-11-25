@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useEffect, useMemo } from 'react';
+import { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
 import { useToast } from './ToastContext';
 
 const FavoritosContext = createContext();
@@ -32,29 +32,32 @@ export const useFavoritos = () => {
     }, [favoritos]);
 
     // Recibe el objeto producto completo para poder mostrarlo en el carrusel
-    const toggleFavorito = (producto) => {
-        let isAdded = false;
-        
+    const toggleFavorito = useCallback((producto) => {
+        // Se decide con el estado actual: React no garantiza ejecutar el updater de
+        // setFavoritos al instante, así que no se puede leer un flag puesto dentro
+        // (provocaba "eliminado de favoritos" al volver a guardar un producto).
+        const yaEsFavorito = Boolean(favoritos[producto.id]);
+
         setFavoritos(prev => {
-            if (prev[producto.id]) {
+            if (yaEsFavorito) {
                 // Si ya existe, lo eliminamos
                 const { [producto.id]: _, ...resto } = prev;
                 return resto;
-            } else {
-                // Si no existe, lo añadimos con todos sus datos
-                isAdded = true;
-                return { ...prev, [producto.id]: producto };
             }
+            // Si no existe, lo añadimos con todos sus datos
+            return { ...prev, [producto.id]: producto };
         });
 
-        if (isAdded) {
-            addToast(`"${producto.nombre}" guardado en favoritos`, 'info');
+        // El catálogo mapea el nombre a `name`; otros componentes usan `nombre`
+        const nombre = producto.nombre || producto.name || 'Producto';
+        if (yaEsFavorito) {
+            addToast(`"${nombre}" eliminado de favoritos`, 'info');
         } else {
-            addToast(`"${producto.nombre}" eliminado de favoritos`, 'info');
+            addToast(`"${nombre}" guardado en favoritos`, 'info');
         }
-    };
+    }, [favoritos, addToast]);
 
-    const esFavorito = (id) => Boolean(favoritos[id]);
+    const esFavorito = useCallback((id) => Boolean(favoritos[id]), [favoritos]);
 
     const listaFavoritos = useMemo(() => Object.values(favoritos), [favoritos]);
 
@@ -63,7 +66,7 @@ export const useFavoritos = () => {
         toggleFavorito,
         esFavorito,
         listaFavoritos
-    }), [favoritos, listaFavoritos]);
+    }), [favoritos, listaFavoritos, toggleFavorito, esFavorito]);
 
     return (
         <FavoritosContext.Provider value={valorFavoritos}>
