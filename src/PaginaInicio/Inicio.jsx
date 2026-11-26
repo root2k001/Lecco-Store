@@ -45,7 +45,7 @@ function CategoriaCarrusel({ imagenes, fallbackClass }) {
         <img
           key={i}
           src={img}
-          alt="Categoria"
+          alt=""
           className={`${styles['categoria-carrusel-img']} ${i === idx ? styles['active'] : ''}`}
         />
       ))}
@@ -188,7 +188,7 @@ function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Lentes',
                 </div>
 
                 <div className={styles['info-coleccion']}>
-                  <h4>{prod.nombre}</h4>
+                  <h3>{prod.nombre}</h3>
                   <span>S/ {Number(prod.precio).toLocaleString('es-PE')}</span>
                 </div>
               </div>

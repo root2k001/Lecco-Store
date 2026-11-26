@@ -60,6 +60,7 @@
   font-size: 1.05rem;
   line-height: 1.8;
   color: #555;
+  max-width: 62ch;
 }
 
 .nosotros-valores {
@@ -153,6 +154,7 @@
   font-size: 1.05rem;
   font-weight: 600;
   color: #1a1a1a;
+  letter-spacing: 0.5px;
   margin-bottom: 10px;
 }
 

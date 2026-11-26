@@ -6,7 +6,9 @@ import nextPlugin from '@next/eslint-plugin-next'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', '.next', 'out', 'next-env.d.ts', 'backend/**']),
+  globalIgnores(['dist', '.next', 'out', 'next-env.d.ts', 'backend/**',
+    // Herramientas de agentes/plugins (no es código de la tienda)
+    '.agents/**', '.claude/**', '.codex/**', '.impeccable/**']),
   {
     // .mjs/.cjs incluidos: next.config.mjs y scripts también se analizan
     files: ['**/*.{js,jsx,mjs,cjs}'],

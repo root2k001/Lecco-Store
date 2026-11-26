@@ -106,7 +106,7 @@
     color: #999;
     letter-spacing: 2px;
     text-transform: uppercase;
-    animation: bounce 2s infinite;
+    animation: flotar 2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
     pointer-events: none;
 }
 
@@ -279,22 +279,15 @@
     }
 }
 
-@keyframes bounce {
+@keyframes flotar {
 
     0%,
-    20%,
-    50%,
-    80%,
     100% {
         transform: translate(-50%, 0);
     }
 
-    40% {
-        transform: translate(-50%, -8px);
-    }
-
-    60% {
-        transform: translate(-50%, -4px);
+    50% {
+        transform: translate(-50%, -6px);
     }
 }
 

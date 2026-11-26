@@ -298,13 +298,13 @@ const ProductosList = ({
                                 </button>
                             </div>
                         ) : (
-                            productos.map((producto) => {
+                            productos.map((producto, i) => {
                                 return (
                                     <div className='producto-carta' key={producto.id}>
                                         <div className='producto-imagen-wrapper'>
                                             <div className='producto-imagen' onClick={() => handleImageClick(producto)}>
                                                 {producto.img && producto.img !== 'en proceso' ?
-                                                    <img src={producto.img} alt={producto.name} style={producto.stock <= 0 ? { opacity: 0.5 } : {}} /> :
+                                                    <img src={producto.img} alt={producto.name} loading={i < 4 ? 'eager' : 'lazy'} style={producto.stock <= 0 ? { opacity: 0.5 } : {}} /> :
                                                     <div className='imagen-placeholder'>👓</div>
                                                 }
                                                 {producto.stock <= 0 && (
@@ -347,7 +347,7 @@ const ProductosList = ({
 
                                         <div className='producto-info'>
                                             <div className="producto-header">
-                                                <h3 className='producto-nombre'>
+                                                <h2 className='producto-nombre'>
                                                     {/* Enlace real a la ficha (lo siguen los buscadores); un clic normal abre el detalle rápido */}
                                                     <Link
                                                         href={rutaProducto(producto)}
@@ -360,7 +360,7 @@ const ProductosList = ({
                                                     >
                                                         {producto.name}
                                                     </Link>
-                                                </h3>
+                                                </h2>
                                                 <button
                                                     className={`btn-favorito ${esFavorito(producto.id) ? 'activo' : ''}`}
                                                     onClick={() => toggleFavorito(producto)}
