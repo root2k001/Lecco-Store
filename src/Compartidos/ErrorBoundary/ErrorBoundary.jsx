@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 
 class ErrorBoundary extends React.Component {
@@ -15,6 +17,8 @@ class ErrorBoundary extends React.Component {
   }
 
   handleReload = () => {
+    // Recarga completa a propósito: tras un error se reinicia todo el estado de la app
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/';
   };
 

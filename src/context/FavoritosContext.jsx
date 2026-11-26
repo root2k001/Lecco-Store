@@ -1,5 +1,8 @@
-import { createContext, useState, useContext, useEffect, useMemo, useCallback } from 'react';
+'use client';
+
+import { createContext, useContext, useMemo, useCallback } from 'react';
 import { useToast } from './ToastContext';
+import { useEstadoPersistente } from '../lib/useEstadoPersistente.js';
 
 const FavoritosContext = createContext();
 
@@ -14,22 +17,8 @@ export const useFavoritos = () => {
     export function FavoritosProvider({ children }) {
     const { addToast } = useToast();
 
-    // Cargamos los favoritos desde LocalStorage al iniciar
-    const [favoritos, setFavoritos] = useState(() => {
-        try {
-            const guardado = localStorage.getItem('lecco-favoritos');
-            return guardado ? JSON.parse(guardado) : {};
-    
-        } catch {
-            return {};
-        }
-
-    });
-
-    // Guardamos en LocalStorage cada vez que cambian los favoritos
-    useEffect(() => {
-        localStorage.setItem('lecco-favoritos', JSON.stringify(favoritos));
-    }, [favoritos]);
+    // Favoritos guardados en LocalStorage (se cargan tras montar, compatible con SSR)
+    const [favoritos, setFavoritos] = useEstadoPersistente('lecco-favoritos', {});
 
     // Recibe el objeto producto completo para poder mostrarlo en el carrusel
     const toggleFavorito = useCallback((producto) => {
@@ -55,7 +44,7 @@ export const useFavoritos = () => {
         } else {
             addToast(`"${nombre}" guardado en favoritos`, 'info');
         }
-    }, [favoritos, addToast]);
+    }, [favoritos, addToast, setFavoritos]);
 
     const esFavorito = useCallback((id) => Boolean(favoritos[id]), [favoritos]);
 

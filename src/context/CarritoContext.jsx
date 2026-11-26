@@ -1,5 +1,8 @@
-import { useState, useContext, createContext, useEffect, useMemo, useCallback } from 'react'
+'use client'
+
+import { useContext, createContext, useMemo, useCallback } from 'react'
 import { useToast } from './ToastContext'
+import { useEstadoPersistente } from '../lib/useEstadoPersistente.js'
 
 export const CarritoContext = createContext()
 
@@ -14,20 +17,8 @@ export const useCarrito = () => {
 export function CarritoProvider({ children }) {
     const { addToast } = useToast()
 
-    // revisa  si hay compras  previas  guardadas  en el localstorage del navegador
-    const [carrito, setCarrito] = useState(() => {
-        try {
-            const guardando = localStorage.getItem('carrito-lecco')
-            return guardando ? JSON.parse(guardando) : []
-        } catch {
-            return []
-        }
-    })
-
-    // cada vez que  cambia  el carrito  se  actualiza el  localstorage
-    useEffect(() => {
-        localStorage.setItem('carrito-lecco', JSON.stringify(carrito))
-    }, [carrito])
+    // Carrito guardado en el localStorage del navegador (se carga tras montar, compatible con SSR)
+    const [carrito, setCarrito] = useEstadoPersistente('carrito-lecco', [])
 
     const agregarAlCarrito = useCallback((producto) => {
         // El aviso se decide con el carrito actual: React no garantiza ejecutar el
@@ -63,12 +54,12 @@ export function CarritoProvider({ children }) {
         });
 
         addToast('Producto añadido al carrito', 'success');
-    }, [carrito, addToast])
+    }, [carrito, addToast, setCarrito])
 
     const eliminarDelCarrito = useCallback((id) => {
         setCarrito(prev => prev.filter(p => p.id !== id))
         addToast('Producto eliminado del carrito', 'info')
-    }, [addToast])
+    }, [addToast, setCarrito])
 
     const incrementarCantidad = useCallback((id) => {
         setCarrito(prev =>
@@ -83,7 +74,7 @@ export function CarritoProvider({ children }) {
                 return p
             })
         )
-    }, [])
+    }, [setCarrito])
 
     const decrementarCantidad = useCallback((id) => {
         setCarrito(prev =>
@@ -96,11 +87,11 @@ export function CarritoProvider({ children }) {
                 return p
             }).filter(p => p.quantity > 0)
         )
-    }, [])
+    }, [setCarrito])
 
     const vaciarCarrito = useCallback(() => {
         setCarrito([])
-    }, [])
+    }, [setCarrito])
 
     const valorCarrito = useMemo(() => ({
         carrito,

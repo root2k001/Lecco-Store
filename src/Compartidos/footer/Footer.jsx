@@ -1,5 +1,7 @@
+'use client'
+
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import './footer.css'
 
 // Suscripción a la newsletter (Brevo, con doble opt-in: llega un correo para confirmar)
@@ -66,9 +68,9 @@ function Footer() {
                 <div className="footer-seccion">
                     <h4>Enlaces</h4>
                     <ul className="footer-links">
-                        <li><Link to="/">Inicio</Link></li>
-                        <li><Link to="/Coleccion">Colección</Link></li>
-                        <li><Link to="/Nosotros">Nosotros</Link></li>
+                        <li><Link href="/">Inicio</Link></li>
+                        <li><Link href="/Lentes">Colección</Link></li>
+                        <li><Link href="/Nosotros">Nosotros</Link></li>
                     </ul>
                 </div>
 

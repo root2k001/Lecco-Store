@@ -24,6 +24,7 @@ function AdminMensajes() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga asíncrona al montar: el setState ocurre tras el fetch
     fetchMensajes();
   }, []);
 

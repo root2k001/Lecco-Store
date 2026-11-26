@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 
 const AuthContext = createContext();

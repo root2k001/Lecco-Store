@@ -5,17 +5,19 @@ description: Arquitectura y versiones del stack de Lecco-Store. Leer antes de in
 ---
 ## 1. Frontend (Cliente)
 
-El cliente está desarrollado como una *Single Page Application* (SPA) con una arquitectura basada en componentes y gestión de estado modular.
+El cliente está desarrollado con **Next.js (App Router)** para SEO: las páginas públicas se renderizan en el servidor (SSR/ISR) y el resto de la interfaz son componentes cliente con gestión de estado modular.
 
 * **Core & UI:**
   * **React (`^19.2.0`)** y **React DOM (`^19.2.0`)**: Biblioteca principal para la construcción de la interfaz de usuario.
-  * **CSS Modules / CSS Vanilla**: Estilizado encapsulado por componente (`.module.css` y `.css`).
+  * **CSS Modules / CSS Vanilla**: Estilizado encapsulado por componente (`.module.css` y `.css`). Las hojas globales se importan en `src/app/layout.jsx` en un orden fijo (el mismo que tenía Vite); una hoja global nueva debe añadirse ahí (lo verifica `src/app/arquitectura.test.jsx`).
 * **Enrutamiento y Estado:**
-  * **React Router DOM (`^7.13.1`)**: Navegación del lado del cliente y protección de rutas administrativas (`RutaAdmin`).
-  * **TanStack React Query (`^5.103.1`)**: Gestión de caché y peticiones asíncronas.
+  * **Next.js (`16.4.6`) App Router**: rutas en `src/app/` (`page.jsx` por URL), `next/link` y `next/navigation`. Páginas de servidor con `metadata`/`generateMetadata`, `sitemap.js` y `robots.js`. Fichas indexables en `/producto/[id]-[slug]`. Protección de admin con `RutaAdmin`.
+  * **Componentes cliente**: los que usan hooks llevan `'use client'`. `localStorage` solo tras montar (`src/lib/useEstadoPersistente.js`) para no romper la hidratación.
+  * **TanStack React Query (`^5.103.1`)**: Gestión de caché y peticiones asíncronas. El servidor precarga con las mismas `queryKey` (`src/lib/precarga.js`) y se hidrata con `HydrationBoundary`.
   * **React Context API**: Estado global dividido por dominio (`AuthContext`, `CarritoContext`, `FavoritosContext`, `ToastContext`).
 * **Bundler y Herramientas de Desarrollo:**
-  * **Vite (`^7.3.1`)** + **`@vitejs/plugin-react` (`^5.1.1`)**: Servidor de desarrollo ultrarrápido y empaquetador para producción (incluye configuración de proxy para `/api`).
+  * **Next.js (Turbopack)**: `pnpm dev` / `pnpm build` / `pnpm start` (puerto 5173). El proxy `/api` al backend está en `next.config.mjs` (`BACKEND_URL`).
+  * **Vite + `@vitejs/plugin-react`**: solo como base de Vitest para los tests.
   * **ESLint (`^9.39.1`)**: Análisis estático y linting del código.
 * **Testing:**
   * **Vitest (`^5.0.3`)**: Framework de pruebas unitarias.
@@ -54,6 +56,6 @@ El servidor está construido en Node.js siguiendo una arquitectura RESTful modul
 * **Control de Versiones:**
   * **Git / GitHub**: Flujo de trabajo basado en ramas (`rama`).
 * **Infraestructura y Despliegue (Cloud):**
-  * **Vercel**: Alojamiento del Frontend (configurado mediante `vercel.json` para reescrituras SPA y proxy de API).
+  * **Vercel**: Alojamiento del Frontend Next.js (proxy de API en `next.config.mjs`; variables `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_WHATSAPP_NUMERO` y opcional `BACKEND_URL`).
   * **Render**: Alojamiento del servidor Backend en Node.js.
   * **Neon**: Base de datos PostgreSQL Serverless con soporte para *branching* y recuperación *Point-in-Time*.

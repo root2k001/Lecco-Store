@@ -1,6 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import Cabecera from '../Compartidos/cabecera/cabecera';
 import PiePagina from '../Compartidos/footer/Footer';
 import './Perfil.css';
@@ -159,7 +161,7 @@ function FormularioDatosPersonales({ usuario, actualizarPerfil }) {
 
 function Perfil() {
   const { usuario, isLoading, actualizarPerfil } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   
   const [pedidos, setPedidos] = useState([]);
@@ -184,13 +186,14 @@ function Perfil() {
 
   useEffect(() => {
     if (!isLoading && !usuario) {
-      navigate('/');
+      router.push('/');
     } else if (!isLoading && usuario) {
 
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- carga asíncrona al montar: el setState ocurre tras el fetch
       cargarMisPedidos();
     }
-  }, [usuario, isLoading, navigate]);
+  }, [usuario, isLoading, router]);
 
   if (isLoading) {
     return (

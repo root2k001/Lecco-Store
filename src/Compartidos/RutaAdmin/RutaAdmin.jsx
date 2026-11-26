@@ -1,4 +1,7 @@
-import { Navigate } from 'react-router-dom';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 
 /**
@@ -7,6 +10,12 @@ import { useAuth } from '../../context/AuthContext';
  */
 function RutaAdmin({ children }) {
     const { usuario, isLoading } = useAuth();
+    const router = useRouter();
+    const sinPermiso = !isLoading && (!usuario || usuario.rol !== 'admin');
+
+    useEffect(() => {
+        if (sinPermiso) router.replace('/');
+    }, [sinPermiso, router]);
 
     if (isLoading) {
         return (
@@ -18,12 +27,8 @@ function RutaAdmin({ children }) {
         );
     }
 
-    if (!usuario) {
-        return <Navigate to="/" replace />;
-    }
-
-    if (usuario.rol !== 'admin') {
-        return <Navigate to="/" replace />;
+    if (sinPermiso) {
+        return null;
     }
 
     return children;

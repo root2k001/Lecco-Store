@@ -1,23 +1,18 @@
-import { useParams, Link } from 'react-router-dom';
+'use client';
+
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import Cabecera from '../Compartidos/cabecera/cabecera.jsx';
 import Productos from './ListaProductos/Productos.jsx';
 import PiePagina from '../Compartidos/footer/Footer.jsx';
+import { obtenerCampana } from '../utils/campanasApi.js';
 import './Campana.css';
-
-const obtenerCampana = async (slug) => {
-    const res = await fetch(`/api/campanas/slug/${encodeURIComponent(slug)}`);
-    if (res.status === 404) return null; // no existe, no ha empezado o ya terminó
-    if (!res.ok) throw new Error('Error al cargar la campaña');
-    return res.json();
-};
 
 const fechaLarga = (fecha) =>
     new Date(fecha).toLocaleDateString('es-PE', { day: 'numeric', month: 'long' });
 
 // Página de una campaña (ej. /campanas/verano-2027): banner + productos de la campaña
-function Campana() {
-    const { slug } = useParams();
+function Campana({ slug }) {
     const { data: campana, isPending, error } = useQuery({
         queryKey: ['campanas', 'slug', slug],
         queryFn: () => obtenerCampana(slug),
@@ -32,7 +27,7 @@ function Campana() {
             <div className="campana-estado">
                 <h1>Esta campaña no está disponible</h1>
                 <p>Puede que haya terminado o que aún no haya empezado.</p>
-                <Link to="/Lentes" className="campana-btn">Ver todos los lentes</Link>
+                <Link href="/Lentes" className="campana-btn">Ver todos los lentes</Link>
             </div>
         );
     } else {

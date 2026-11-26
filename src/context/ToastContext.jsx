@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useState, useContext, useCallback, useMemo } from 'react';
 import './Toast.css';
 

@@ -1,10 +1,13 @@
+'use client'
+
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import './Carrito.css'
 import Cabecera from '../Compartidos/cabecera/cabecera.jsx'
 import PiePagina from '../Compartidos/footer/Footer.jsx'
 
-const WHATSAPP_NUMERO = import.meta.env.VITE_WHATSAPP_NUMERO || '51966894989'
+import { WHATSAPP_NUMERO } from '../lib/sitio.js'
 
 // Estado que MP pone en la URL de retorno → estado interno (solo como respaldo visual)
 const estadoDesdeUrl = (status) => {
@@ -37,7 +40,7 @@ const MENSAJES = {
 }
 
 function PagoResultado() {
-    const [params] = useSearchParams()
+    const params = useSearchParams()
     const pagoId = params.get('payment_id') || params.get('collection_id')
     const pagoIdValido = /^\d{1,20}$/.test(pagoId || '')
     const pedidoUrl = params.get('external_reference')
@@ -87,7 +90,7 @@ function PagoResultado() {
                                     Coordinar por WhatsApp
                                 </a>
                             )}
-                            <Link to="/Lentes" className="btn-seguir-comprando">
+                            <Link href="/Lentes" className="btn-seguir-comprando">
                                 Volver a la tienda
                             </Link>
                         </>

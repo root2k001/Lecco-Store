@@ -1,13 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ToastProvider } from '../context/ToastContext';
-import { AuthProvider } from '../context/AuthContext';
-import { CarritoProvider } from '../context/CarritoContext';
-import { FavoritosProvider } from '../context/FavoritosContext';
-import App from '../App.jsx';
+import { screen, fireEvent, waitFor, within } from '@testing-library/react';
 import Carrito from '../PaginaCarrito/Carrito.jsx';
+import { renderRuta, renderConProviders } from '../test/renderRuta.jsx';
 import { capturarCampanaDeUrl, obtenerCampanaOrigen, enlaceCampana } from '../utils/campanaOrigen.js';
 
 const verano = {
@@ -35,13 +29,7 @@ const mockApi = (campanas) => vi.fn((url) => {
     return json({ productos: [producto(20, 'Gafa Normal')], total: 1, page: 1, totalPages: 1 });
 });
 
-const renderApp = (ruta) => render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={[ruta]}>
-            <App />
-        </MemoryRouter>
-    </QueryClientProvider>
-);
+const renderApp = (ruta) => renderRuta(ruta);
 
 const urls = () => globalThis.fetch.mock.calls.map(([url]) => url);
 
@@ -122,17 +110,7 @@ describe('Atribución de ventas (utm_campaign)', () => {
         });
         const abrir = vi.spyOn(window, 'open').mockImplementation(() => null);
 
-        render(
-            <MemoryRouter>
-                <ToastProvider>
-                    <AuthProvider>
-                        <FavoritosProvider>
-                            <CarritoProvider><Carrito /></CarritoProvider>
-                        </FavoritosProvider>
-                    </AuthProvider>
-                </ToastProvider>
-            </MemoryRouter>
-        );
+        renderConProviders(<Carrito />);
 
         fireEvent.click(await screen.findByText('Proceder al Pago'));
         fireEvent.change(screen.getByPlaceholderText('Dirección completa'), { target: { value: 'Av. Sol 123' } });

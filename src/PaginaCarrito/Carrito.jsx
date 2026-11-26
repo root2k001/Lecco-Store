@@ -1,10 +1,13 @@
+'use client'
+
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import './Carrito.css'
 import { useCarrito } from '../context/CarritoContext'
 
 import AuthModal from '../Compartidos/AuthModal/AuthModal'
 import { obtenerCampanaOrigen } from '../utils/campanaOrigen.js'
+import { WHATSAPP_NUMERO } from '../lib/sitio.js'
 
 function Carrito() {
     const { carrito, eliminarDelCarrito, incrementarCantidad, decrementarCantidad, vaciarCarrito } = useCarrito()
@@ -44,8 +47,7 @@ function Carrito() {
         setMostrarEnvio(true)
     }
 
-    // ─── Constante con número de WhatsApp (configurable vía VITE_WHATSAPP_NUMERO) ────────
-    const WHATSAPP_NUMERO = import.meta.env.VITE_WHATSAPP_NUMERO || '51966894989'
+    // Número de WhatsApp: configurable vía NEXT_PUBLIC_WHATSAPP_NUMERO (lib/sitio.js)
 
     // Construye el mensaje de WhatsApp con todos los detalles del pedido
     const generarMensajeWhatsApp = (numeroPedido) => {
@@ -150,7 +152,7 @@ function Carrito() {
                     <p><strong>{envioDatos.direccion}, {envioDatos.ciudad}</strong></p>
                     <p>se estara concretando la compra por whatsApp en un momento </p>
                     <br />
-                    <Link to="/Lentes" className="btn-seguir-comprando" onClick={() => setCompraExitosa(false)}>
+                    <Link href="/Lentes" className="btn-seguir-comprando" onClick={() => setCompraExitosa(false)}>
                         Volver a la tienda
                     </Link>
                 </div>
@@ -166,7 +168,7 @@ function Carrito() {
                 <div className="carrito-vacio">
                     <span className="carrito-vacio-icono">🛒</span>
                     <p>Tu carrito está vacío</p>
-                    <Link to="/Lentes" className="btn-seguir-comprando">
+                    <Link href="/Lentes" className="btn-seguir-comprando">
                         Ver colección
                     </Link>
                 </div>
@@ -250,7 +252,7 @@ function Carrito() {
                                 >
                                     Proceder al Pago
                                 </button>
-                                <Link to="/Lentes" className="btn-seguir-comprando">
+                                <Link href="/Lentes" className="btn-seguir-comprando">
                                     Continuar Comprando
                                 </Link>
                             </>

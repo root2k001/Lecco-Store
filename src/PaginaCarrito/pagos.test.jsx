@@ -1,13 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ToastProvider } from '../context/ToastContext';
-import { AuthProvider } from '../context/AuthContext';
-import { CarritoProvider } from '../context/CarritoContext';
-import { FavoritosProvider } from '../context/FavoritosContext';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import Carrito from './Carrito.jsx';
-import PagoResultado from './PagoResultado.jsx';
+import { renderConProviders, renderRuta } from '../test/renderRuta.jsx';
 
 const json = (data, ok = true, status = ok ? 200 : 404) => Promise.resolve({
     ok, status, headers: { get: () => 'application/json' }, json: () => Promise.resolve(data)
@@ -20,17 +14,7 @@ const mockApi = ({ mercadopago }) => vi.fn((url) => {
     return json({ error: 'No autorizado' }, false, 401);
 });
 
-const renderCarrito = () => render(
-    <MemoryRouter>
-        <ToastProvider>
-            <AuthProvider>
-                <FavoritosProvider>
-                    <CarritoProvider><Carrito /></CarritoProvider>
-                </FavoritosProvider>
-            </AuthProvider>
-        </ToastProvider>
-    </MemoryRouter>
-);
+const renderCarrito = () => renderConProviders(<Carrito />);
 
 const llenarEnvio = () => {
     fireEvent.change(screen.getByPlaceholderText('Dirección completa'), { target: { value: 'Av. Sol 123' } });
@@ -73,21 +57,7 @@ describe('Checkout con dos métodos de pago', () => {
 });
 
 describe('Página de resultado de pago', () => {
-    const renderResultado = (query) => render(
-        <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <MemoryRouter initialEntries={[`/pago/resultado${query}`]}>
-            <ToastProvider>
-                <AuthProvider>
-                    <FavoritosProvider>
-                        <CarritoProvider>
-                            <Routes><Route path="/pago/resultado" element={<PagoResultado />} /></Routes>
-                        </CarritoProvider>
-                    </FavoritosProvider>
-                </AuthProvider>
-            </ToastProvider>
-        </MemoryRouter>
-        </QueryClientProvider>
-    );
+    const renderResultado = (query) => renderRuta(`/pago/resultado${query}`);
 
     it('confirma el pago con el servidor y muestra "aprobado"', async () => {
         globalThis.fetch = vi.fn((url) => url === '/api/pedidos/pago/confirmar'

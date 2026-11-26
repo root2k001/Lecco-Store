@@ -1,10 +1,14 @@
+'use client';
+
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useCarrito } from '../../context/CarritoContext';
 import { useFavoritos } from '../../context/FavoritosContext';
 import './Productos.css';
 import DetalleProducto from '../DetallesProductos/DetallesProductos.jsx';
-import { mapearProducto } from '../mapearProducto.js';
+import { ITEMS_POR_PAGINA, CLAVE_COLORES, claveProductos, obtenerColores, obtenerProductos } from '../productosApi.js';
+import { rutaProducto } from '../../lib/slug.js';
 
 // Diccionario de referencia para muestras visuales de colores habituales
 const DICCIONARIO_COLORES_HEX = {
@@ -55,50 +59,8 @@ const DICCIONARIO_COLORES_HEX = {
     beige: '#f5f5dc'
 };
 
-// ── Peticiones (React Query cachea por queryKey: volver a /Sale o /Lentes no repite la petición) ──
-const ITEMS_POR_PAGINA = 16;
-
-const obtenerColores = async () => {
-    const res = await fetch('/api/productos/colores');
-    if (!res.ok) throw new Error('Error cargando lista de colores');
-    return res.json();
-};
-
-const obtenerProductos = async ({ pagina, orden, colorSeleccionado, sale, campana }) => {
-    const params = new URLSearchParams({
-        page: String(pagina),
-        limit: String(ITEMS_POR_PAGINA),
-        orden
-    });
-
-    if (colorSeleccionado) {
-        params.append('color', colorSeleccionado);
-    }
-
-    // En la pestaña /Sale solo se piden productos en oferta
-    if (sale) {
-        params.append('sale', 'true');
-    }
-
-    // En /campanas/:slug solo se piden los productos de esa campaña
-    if (campana) {
-        params.append('campana', campana);
-    }
-
-    const response = await fetch(`/api/productos?${params.toString()}`);
-
-    if (!response.ok) {
-        throw new Error('Error al cargar los productos desde el servidor');
-    }
-
-    const data = await response.json();
-    return {
-        productos: (data.productos || data).map(mapearProducto),
-        totalPaginas: data.totalPages ?? 1,
-        totalProductos: data.total ?? 0
-    };
-};
-// ───────────────────────────────────────────────────────────────────────────
+// Peticiones en productosApi.js (compartidas con la precarga del servidor).
+// React Query cachea por queryKey: volver a /Sale o /Lentes no repite la petición.
 
 const ProductosList = ({
     sale = false,
@@ -120,8 +82,8 @@ const ProductosList = ({
 
     // Colores únicos existentes en la BD (cambian poco: se cachean 10 min)
     const { data: coloresBD = [] } = useQuery({
-        queryKey: ['productos', 'colores'],
-        queryFn: obtenerColores,
+        queryKey: CLAVE_COLORES,
+        queryFn: () => obtenerColores(),
         staleTime: 10 * 60 * 1000
     });
 
@@ -132,7 +94,7 @@ const ProductosList = ({
         isPending: loading,
         error: errorQuery
     } = useQuery({
-        queryKey: ['productos', { pagina, orden, colorSeleccionado, sale, campana }],
+        queryKey: claveProductos({ pagina, orden, colorSeleccionado, sale, campana }),
         queryFn: () => obtenerProductos({ pagina, orden, colorSeleccionado, sale, campana }),
         placeholderData: keepPreviousData,
         staleTime: 60 * 1000
@@ -385,7 +347,20 @@ const ProductosList = ({
 
                                         <div className='producto-info'>
                                             <div className="producto-header">
-                                                <h3 className='producto-nombre' onClick={() => handleImageClick(producto)}>{producto.name}</h3>
+                                                <h3 className='producto-nombre'>
+                                                    {/* Enlace real a la ficha (lo siguen los buscadores); un clic normal abre el detalle rápido */}
+                                                    <Link
+                                                        href={rutaProducto(producto)}
+                                                        style={{ color: 'inherit', textDecoration: 'none' }}
+                                                        onClick={(e) => {
+                                                            if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                                                            e.preventDefault();
+                                                            handleImageClick(producto);
+                                                        }}
+                                                    >
+                                                        {producto.name}
+                                                    </Link>
+                                                </h3>
                                                 <button
                                                     className={`btn-favorito ${esFavorito(producto.id) ? 'activo' : ''}`}
                                                     onClick={() => toggleFavorito(producto)}

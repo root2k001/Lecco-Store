@@ -1,17 +1,18 @@
+'use client'
+
 import './Detalles.css'
 import { useCarrito } from '../../context/CarritoContext'
 import { useFavoritos } from '../../context/FavoritosContext'
 import { useState } from 'react'
 
-const DetalleProducto = ({ producto, onCerrar }) => {
+// Ficha del producto: se usa en el modal del catálogo y en la página /producto/[slug]
+export const FichaProducto = ({ producto }) => {
     const { agregarAlCarrito } = useCarrito()
     const { toggleFavorito, esFavorito } = useFavoritos()
 
     // Estados para controlar los acordeones
     const [envioAbierto, setEnvioAbierto] = useState(false)
     const [detallesAbierto, setDetallesAbierto] = useState(true)
-
-    if (!producto) return null
 
     const imagenesAdicionales = producto.imagenesAdicionales || []
     const videosProducto = producto.videos || []
@@ -23,10 +24,6 @@ const DetalleProducto = ({ producto, onCerrar }) => {
     ]
 
     return (
-        <div className="modal-overlay" onClick={onCerrar}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <button className="modal-cerrar" onClick={onCerrar}>×</button>
-
                 <div className="detalle-producto-container">
                     {/* Columna Izquierda: Carrusel de imágenes/videos scrolleable verticalmente */}
                     <div className="detalle-imagenes-carrusel">
@@ -130,6 +127,18 @@ const DetalleProducto = ({ producto, onCerrar }) => {
                         </div>
                     </div>
                 </div>
+    )
+}
+
+// Detalle rápido en modal (catálogo e inicio)
+const DetalleProducto = ({ producto, onCerrar }) => {
+    if (!producto) return null
+
+    return (
+        <div className="modal-overlay" onClick={onCerrar}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <button className="modal-cerrar" onClick={onCerrar}>×</button>
+                <FichaProducto producto={producto} />
             </div>
         </div>
     )

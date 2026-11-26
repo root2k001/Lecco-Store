@@ -1,6 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import AdminMetricas from './AdminMetricas';
 import AdminPedidos from './AdminPedidos';
 import AdminProductos from './AdminProductos';
@@ -11,7 +13,7 @@ import './AdminDashboard.css';
 
 function AdminDashboard() {
   const { usuario, logout } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [pedidos, setPedidos] = useState([]);
@@ -34,7 +36,7 @@ function AdminDashboard() {
 
       if (resPedidos.status === 401 || resHistorial.status === 401) {
         logout();
-        navigate('/');
+        router.push('/');
         return;
       }
 
@@ -57,11 +59,13 @@ function AdminDashboard() {
 
   useEffect(() => {
     if (!usuario || usuario.rol !== 'admin') {
-      navigate('/');
+      router.push('/');
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- carga asíncrona al montar: el setState ocurre tras el fetch
       cargarDatos();
     }
-  }, [usuario, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recargar solo cuando cambia el usuario (cargarDatos se recrea en cada render)
+  }, [usuario, router]);
 
 
 
@@ -167,7 +171,7 @@ function AdminDashboard() {
               <span className="admin-user-role">Administrador</span>
             </div>
           </div>
-          <button className="btn-volver-tienda" onClick={() => navigate('/')}>
+          <button className="btn-volver-tienda" onClick={() => router.push('/')}>
             <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none">
               <path d="M19 12H5" /><polyline points="12 19 5 12 12 5" />
             </svg>

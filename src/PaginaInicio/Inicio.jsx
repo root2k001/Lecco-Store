@@ -1,5 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+'use client';
+
+import { useState, useEffect, useRef, Suspense } from 'react';
+import Link from 'next/link';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useToast } from '../context/ToastContext';
 import { useQuery } from '@tanstack/react-query';
 import { CLAVE_CAMPANAS_ACTIVAS, obtenerCampanasActivas, obtenerProductosDeCampana } from '../utils/campanasApi.js';
@@ -48,6 +51,22 @@ function CategoriaCarrusel({ imagenes, fallbackClass }) {
       ))}
     </div>
   );
+}
+
+// Al confirmar la newsletter, Brevo redirige a /?suscripcion=confirmada.
+// Va aparte (dentro de Suspense) porque useSearchParams impediría prerenderizar la página.
+function AvisoSuscripcion() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { addToast } = useToast();
+  useEffect(() => {
+    if (searchParams.get('suscripcion') === 'confirmada') {
+      addToast('¡Suscripción confirmada! Te avisaremos de ofertas y nuevas colecciones.', 'success');
+      router.replace(pathname, { scroll: false });
+    }
+  }, [searchParams, router, pathname, addToast]);
+  return null;
 }
 
 function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Lentes', onSeleccionarProducto }) {
@@ -113,7 +132,7 @@ function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Lentes',
     <section className={styles['seccion-coleccion']}>
       <div className={styles['encabezado-coleccion']}>
         <h2 className={styles['titulo-coleccion']}>{titulo}</h2>
-        <Link to={enlaceRuta} className={styles['enlace-ver-todo']}>
+        <Link href={enlaceRuta} className={styles['enlace-ver-todo']}>
           Ver todos
         </Link>
       </div>
@@ -181,23 +200,25 @@ function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Lentes',
   );
 }
 
-function Inicio() {
-  const [productosDestacados, setProductosDestacados] = useState([]);
-  const [todosLosProductos, setTodosLosProductos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [productosColeccion, setProductosColeccion] = useState([]);
-  const [productosSale, setProductosSale] = useState([]);
+// datosIniciales: listas precargadas en el servidor (SSR). Si faltan, se piden en el cliente.
+function Inicio({ datosIniciales = null }) {
+  const [todosLosProductos, setTodosLosProductos] = useState(datosIniciales?.general ?? []);
+  // 12 productos para que el carrusel de Nuevos Ingresos tenga recorrido horizontal
+  const [productosDestacados, setProductosDestacados] = useState((datosIniciales?.general ?? []).slice(0, 12));
+  const [loading, setLoading] = useState(!datosIniciales);
+  const [productosColeccion, setProductosColeccion] = useState(datosIniciales?.coleccion ?? []);
+  const [productosSale, setProductosSale] = useState(datosIniciales?.sale ?? []);
   // Producto abierto en el detalle (null = cerrado)
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
   const abrirDetalle = (prod) => setProductoSeleccionado(mapearProducto(prod));
   // La pestaña Colección ya no existe: sus productos llevan al catálogo completo
-  const navigate = useNavigate();
-  const irALentes = () => navigate('/Lentes');
+  const router = useRouter();
+  const irALentes = () => router.push('/Lentes');
 
   // Campaña vigente (ej. Colección de Verano): se destaca con su propio carrusel
   const { data: campanasActivas = [] } = useQuery({
     queryKey: CLAVE_CAMPANAS_ACTIVAS,
-    queryFn: obtenerCampanasActivas,
+    queryFn: () => obtenerCampanasActivas(),
     staleTime: 5 * 60 * 1000
   });
   const campanaDestacada = campanasActivas[0];
@@ -208,17 +229,8 @@ function Inicio() {
     staleTime: 60 * 1000
   });
 
-  // Al confirmar la newsletter, Brevo redirige a /?suscripcion=confirmada
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { addToast } = useToast();
   useEffect(() => {
-    if (searchParams.get('suscripcion') === 'confirmada') {
-      addToast('¡Suscripción confirmada! Te avisaremos de ofertas y nuevas colecciones.', 'success');
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, setSearchParams, addToast]);
-
-  useEffect(() => {
+    if (datosIniciales) return; // ya vienen renderizados desde el servidor
     const fetchProductos = async () => {
       try {
         const [resGeneral, resColeccion, resSale] = await Promise.all([
@@ -246,12 +258,15 @@ function Inicio() {
       }
     };
     fetchProductos();
-  }, []);
+  }, [datosIniciales]);
 
 
   return (
     <div className={`${styles['inicio-pagina'] || 'inicio-pagina'}`}>
       <Cabecera />
+      <Suspense fallback={null}>
+        <AvisoSuscripcion />
+      </Suspense>
 
       {/* HERO SECTION */}
       <section className={`${styles['hero-section'] || 'hero-section'}`}>
@@ -260,7 +275,7 @@ function Inicio() {
         <div className={`${styles['hero-content'] || 'hero-content'}`}>
           <h1 className={`${styles['hero-title'] || 'hero-title'}`}>Lecco</h1>
           <p className={`${styles['hero-subtitle'] || 'hero-subtitle'}`}>El estilo perfecto empieza por tu mirada</p>
-          <Link to="/Coleccion" className={`${styles['hero-btn'] || 'hero-btn'}`}>Ver Colección</Link>
+          <Link href="/Lentes" className={`${styles['hero-btn'] || 'hero-btn'}`}>Ver Colección</Link>
         </div>
       </section>
 
@@ -271,7 +286,7 @@ function Inicio() {
         <h2 className={styles?.['section-title'] || 'section-title'}>Encuentra tu estilo</h2>
         <div className={styles?.['categorias-grid'] || 'categorias-grid'}>
           <Link
-            to="/Lentes"
+            href="/Lentes"
             className={styles?.['categoria-card'] || 'categoria-card'}
           >
             <CategoriaCarrusel
@@ -284,7 +299,7 @@ function Inicio() {
           </Link>
 
           <Link
-            to="/Lentes"
+            href="/Lentes"
             className={styles?.['categoria-card'] || 'categoria-card'}
           >
             <CategoriaCarrusel
@@ -297,7 +312,7 @@ function Inicio() {
           </Link>
 
           <Link
-            to="/Lentes"
+            href="/Lentes"
             className={styles?.['categoria-card'] || 'categoria-card'}
           >
             <CategoriaCarrusel

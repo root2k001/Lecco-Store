@@ -1,12 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, createEvent, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ToastProvider } from '../context/ToastContext';
-import { AuthProvider } from '../context/AuthContext';
-import { CarritoProvider } from '../context/CarritoContext';
-import { FavoritosProvider } from '../context/FavoritosContext';
-import Inicio from './Inicio.jsx';
+import { screen, fireEvent, createEvent, within } from '@testing-library/react';
+import { renderRuta } from '../test/renderRuta.jsx';
+import { navegacion } from '../test/navegacion.js';
 
 const productoApi = (id, nombre, extra = {}) => ({
     id, nombre, precio: '249.00', imagen: null, genero: 'unisex', stock: 4,
@@ -25,24 +20,7 @@ const mockFetch = () => vi.fn((url) => {
     return json({ productos: [productoApi(1, 'Gafa Nueva')] });
 });
 
-const renderInicio = () => render(
-    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-    <MemoryRouter>
-        <ToastProvider>
-            <AuthProvider>
-                <FavoritosProvider>
-                    <CarritoProvider>
-                        <Routes>
-                            <Route path="/" element={<Inicio />} />
-                            <Route path="/Lentes" element={<h1>Página Lentes</h1>} />
-                        </Routes>
-                    </CarritoProvider>
-                </FavoritosProvider>
-            </AuthProvider>
-        </ToastProvider>
-    </MemoryRouter>
-    </QueryClientProvider>
-);
+const renderInicio = () => renderRuta('/');
 
 const detalleAbierto = () => document.querySelector('.detalle-producto-container');
 
@@ -72,7 +50,7 @@ describe('Carruseles de la página de inicio', () => {
     it('al pulsar un producto del carrusel "Colección" va directo a /Lentes (sin abrir detalle)', async () => {
         renderInicio();
         fireEvent.click(await screen.findByRole('button', { name: 'Ver Gafa Colección' }));
-        expect(screen.getByRole('heading', { name: 'Página Lentes' })).toBeInTheDocument();
+        expect(navegacion.ruta).toBe('/Lentes');
         expect(detalleAbierto()).toBeNull();
     });
 

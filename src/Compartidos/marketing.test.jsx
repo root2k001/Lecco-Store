@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ToastProvider } from '../context/ToastContext';
 import { AuthProvider } from '../context/AuthContext';
@@ -21,7 +20,6 @@ const cuerpoDe = (ruta) => {
 
 const conProveedores = (ui) => render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-    <MemoryRouter>
         <ToastProvider>
             <AuthProvider>
                 <FavoritosProvider>
@@ -29,7 +27,6 @@ const conProveedores = (ui) => render(
                 </FavoritosProvider>
             </AuthProvider>
         </ToastProvider>
-    </MemoryRouter>
     </QueryClientProvider>
 );
 
@@ -77,7 +74,7 @@ describe('Consentimiento de marketing en el registro', () => {
 describe('Newsletter del pie de página', () => {
     it('envía el correo y muestra el aviso de confirmación', async () => {
         globalThis.fetch = vi.fn(() => json({ message: 'Revisa tu correo y confirma tu suscripción.' }));
-        render(<MemoryRouter><Footer /></MemoryRouter>);
+        render(<Footer />);
 
         fireEvent.change(screen.getByLabelText('Recibe ofertas y nuevas colecciones'), { target: { value: 'lector@test.local' } });
         fireEvent.click(screen.getByText('Suscribirme'));
@@ -89,7 +86,7 @@ describe('Newsletter del pie de página', () => {
 
     it('muestra el error si la suscripción no está disponible', async () => {
         globalThis.fetch = vi.fn(() => json({ error: 'La suscripción no está disponible en este momento.' }, false, 503));
-        render(<MemoryRouter><Footer /></MemoryRouter>);
+        render(<Footer />);
 
         fireEvent.change(screen.getByLabelText('Recibe ofertas y nuevas colecciones'), { target: { value: 'lector@test.local' } });
         fireEvent.click(screen.getByText('Suscribirme'));
