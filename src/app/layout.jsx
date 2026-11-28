@@ -39,7 +39,7 @@ export const metadata = {
         description: SITE_DESCRIPCION,
         images: ['/portadaInicio.jpg']
     },
-    icons: { icon: '/vite.svg' }
+    icons: { icon: '/lecco.svg' }
 };
 
 export const viewport = {

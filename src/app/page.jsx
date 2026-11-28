@@ -40,7 +40,7 @@ export default async function PaginaInicio() {
                     '@type': 'Organization',
                     name: SITE_NAME,
                     url: SITE_URL,
-                    logo: `${SITE_URL}/vite.svg`,
+                    logo: `${SITE_URL}/lecco.svg`,
                     sameAs: ['https://www.instagram.com/lecco.eyewear']
                 },
                 {
