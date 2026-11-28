@@ -65,7 +65,7 @@ services:
       - lecco-network
 
   # ==========================================
-  # Frontend (Vite + React SPA)
+  # Frontend (Next.js: SSR/ISR para SEO)
   # ==========================================
   frontend:
     build:
@@ -77,15 +77,17 @@ services:
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     environment:
-      - VITE_PORT=5173
       - BACKEND_URL=http://backend:3000
-      - VITE_WHATSAPP_NUMERO=${VITE_WHATSAPP_NUMERO:-51966894989}
+      - NEXT_PUBLIC_WHATSAPP_NUMERO=${NEXT_PUBLIC_WHATSAPP_NUMERO:-51966894989}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-http://localhost:5173}
+      # Detecta cambios de archivos montados desde Windows/macOS
+      - WATCHPACK_POLLING=true
     volumes:
       # Sincronización en caliente para desarrollo:
       - .:/app
       - /app/node_modules
       - /app/backend
-      - /app/dist
+      - /app/.next
     depends_on:
       - backend
     networks:

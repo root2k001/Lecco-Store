@@ -19,7 +19,7 @@
 
 .carrito-vacio {
   text-align: center;
-  color: #aaa;
+  color: #767676;
   font-size: 0.9rem;
   letter-spacing: 1px;
   padding: 80px 0;
@@ -56,7 +56,7 @@
 }
 
 .carrito-header span {
-  color: #888;
+  color: #767676;
   font-size: 0.8rem;
   letter-spacing: 0.5px;
 }
@@ -133,7 +133,7 @@
 
 .carrito-item-genero {
   font-size: 0.65rem;
-  color: #aaa;
+  color: #767676;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   font-weight: 600;
@@ -148,7 +148,7 @@
 
 .carrito-item-precio-unitario {
   font-size: 0.8rem;
-  color: #888;
+  color: #767676;
 }
 
 /* Controles de cantidad */
@@ -211,7 +211,7 @@
 .carrito-item-eliminar {
   background: none;
   border: 1px solid #ebebeb;
-  color: #888;
+  color: #767676;
   padding: 8px 16px;
   font-size: 0.7rem;
   font-weight: 600;
@@ -298,7 +298,7 @@
   display: block;
   text-align: center;
   margin-top: 20px;
-  color: #888;
+  color: #767676;
   text-decoration: none;
   font-size: 0.75rem;
   font-weight: 600;
@@ -353,6 +353,63 @@
 .envio-row input {
     flex: 1;
     width: 100%;
+}
+
+/* ─── Método de pago ─── */
+.metodo-pago {
+    border: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.metodo-pago legend {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    padding: 0;
+}
+
+.metodo-pago-opcion {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #ebebeb;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    background-color: #fff;
+    color: #111;
+}
+
+.metodo-pago-opcion.activo {
+    border-color: #111;
+}
+
+.envio-form .metodo-pago-opcion input {
+    padding: 0;
+    margin: 3px 0 0;
+    accent-color: #111;
+}
+
+.metodo-pago-opcion span {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.metodo-pago-opcion strong {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.metodo-pago-opcion small {
+    font-size: 0.72rem;
+    color: #777;
 }
 
 .envio-botones {

@@ -1,11 +1,15 @@
 
+'use client'
+
 import './principal.css'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { useCarrito } from '../../context/CarritoContext'
 import { useAuth } from '../../context/AuthContext'
 import { useFavoritos } from '../../context/FavoritosContext'
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import AuthModal from '../AuthModal/AuthModal'
+import { CLAVE_CAMPANAS_ACTIVAS, obtenerCampanasActivas } from '../../utils/campanasApi.js'
 
 function Cabecera() {
     const { carrito, eliminarDelCarrito, agregarAlCarrito, incrementarCantidad, decrementarCantidad } = useCarrito()
@@ -15,6 +19,12 @@ function Cabecera() {
     const [mostrarModal, setMostrarModal] = useState(false)
     const [showAuthModal, setShowAuthModal] = useState(false)
     const [menuMobileAbierto, setMenuMobileAbierto] = useState(false)
+    // Campañas vigentes: su pestaña solo aparece mientras están activas
+    const { data: campanasActivas = [] } = useQuery({
+        queryKey: CLAVE_CAMPANAS_ACTIVAS,
+        queryFn: () => obtenerCampanasActivas(),
+        staleTime: 5 * 60 * 1000
+    })
 
     const toggleModal = () => setMostrarModal(!mostrarModal)
     const toggleMenuMobile = () => setMenuMobileAbierto(!menuMobileAbierto)
@@ -26,27 +36,33 @@ function Cabecera() {
             <nav className={`navigation ${menuMobileAbierto ? 'nav-abierto' : ''}`}>
                 <ul>
                     <li>
-                        <Link to="/" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Inicio</Link>
+                        <Link href="/" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Inicio</Link>
                     </li>
 
 
 
                     <li>
-                        <Link to="/Lentes" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Lentes</Link>
+                        <Link href="/Lentes" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Lentes</Link>
                     </li>
 
                     <li>
-                        <Link to="/Sale" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Sale</Link>
+                        <Link href="/Sale" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Sale</Link>
                     </li>
 
+                    {campanasActivas.map(campana => (
+                        <li key={campana.id}>
+                            <Link href={`/campanas/${campana.slug}`} className='menu-link' onClick={() => setMenuMobileAbierto(false)}>{campana.titulo}</Link>
+                        </li>
+                    ))}
+
                     <li>
-                        <Link to="/Nosotros" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Nosotros</Link>
+                        <Link href="/Nosotros" className='menu-link' onClick={() => setMenuMobileAbierto(false)}>Nosotros</Link>
                     </li>
 
                 </ul>
             </nav>
 
-            <Link to="/" className="logo">Lecco</Link>
+            <Link href="/" className="logo">Lecco</Link>
 
             <nav>
                 <ul>
@@ -67,9 +83,9 @@ function Cabecera() {
                     ) : (
                         <li className="usuario-nav">
                             {usuario.rol === 'admin' && (
-                                <Link to="/admin" className="menu-link" style={{ color: '#3b82f6', fontWeight: 'bold' }} onClick={() => setMenuMobileAbierto(false)}>Panel Admin</Link>
+                                <Link href="/admin" className="menu-link" style={{ color: '#3b82f6', fontWeight: 'bold' }} onClick={() => setMenuMobileAbierto(false)}>Panel Admin</Link>
                             )}
-                            <Link to="/perfil" className="usuario-nombre" style={{ textDecoration: 'none' }} title="Ir a Mi Perfil" onClick={() => setMenuMobileAbierto(false)}>Hola, {usuario.nombre}</Link>
+                            <Link href="/perfil" className="usuario-nombre" style={{ textDecoration: 'none' }} title="Ir a Mi Perfil" onClick={() => setMenuMobileAbierto(false)}>Hola, {usuario.nombre}</Link>
                             <button className="btn-logout" onClick={() => { logout(); setMenuMobileAbierto(false); }}>Cerrar Sesión</button>
                         </li>
                     )}
@@ -202,7 +218,7 @@ function Cabecera() {
                                     <span>S/ {total.toLocaleString('es-PE')}</span>
                                 </div>
                                 <Link
-                                    to="/Carrito"
+                                    href="/Carrito"
                                     className="btn-visualizar-carrito"
                                     onClick={toggleModal}
                                 >

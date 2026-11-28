@@ -1,7 +1,15 @@
-import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+'use client';
+
+import { useState, useEffect, useRef, Suspense } from 'react';
+import Link from 'next/link';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useToast } from '../context/ToastContext';
+import { useQuery } from '@tanstack/react-query';
+import { CLAVE_CAMPANAS_ACTIVAS, obtenerCampanasActivas, obtenerProductosDeCampana } from '../utils/campanasApi.js';
 import Cabecera from '../Compartidos/cabecera/cabecera';
 import PiePagina from '../Compartidos/footer/Footer';
+import DetalleProducto from '../PaginaCatalogo/DetallesProductos/DetallesProductos.jsx';
+import { mapearProducto } from '../PaginaCatalogo/mapearProducto.js';
 import styles from './Inicio.module.css';
 
 
@@ -37,7 +45,7 @@ function CategoriaCarrusel({ imagenes, fallbackClass }) {
         <img
           key={i}
           src={img}
-          alt="Categoria"
+          alt=""
           className={`${styles['categoria-carrusel-img']} ${i === idx ? styles['active'] : ''}`}
         />
       ))}
@@ -45,7 +53,23 @@ function CategoriaCarrusel({ imagenes, fallbackClass }) {
   );
 }
 
-function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Coleccion' }) {
+// Al confirmar la newsletter, Brevo redirige a /?suscripcion=confirmada.
+// Va aparte (dentro de Suspense) porque useSearchParams impediría prerenderizar la página.
+function AvisoSuscripcion() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { addToast } = useToast();
+  useEffect(() => {
+    if (searchParams.get('suscripcion') === 'confirmada') {
+      addToast('¡Suscripción confirmada! Te avisaremos de ofertas y nuevas colecciones.', 'success');
+      router.replace(pathname, { scroll: false });
+    }
+  }, [searchParams, router, pathname, addToast]);
+  return null;
+}
+
+function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Lentes', onSeleccionarProducto }) {
   const pistaCarruselRef = useRef(null);
   const [arrastrando, setArrastrando] = useState(false);
   const estadoArrastre = useRef({
@@ -93,7 +117,7 @@ function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Coleccio
 
 
 
-  // Evita que el <Link> redirija si el usuario estaba arrastrando
+  // Evita que se abra el detalle del producto si el usuario estaba arrastrando
   const manejarClickCaptura = (e) => {
     if (estadoArrastre.current.seMovio) {
       e.preventDefault();
@@ -108,7 +132,7 @@ function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Coleccio
     <section className={styles['seccion-coleccion']}>
       <div className={styles['encabezado-coleccion']}>
         <h2 className={styles['titulo-coleccion']}>{titulo}</h2>
-        <Link to={enlaceRuta} className={styles['enlace-ver-todo']}>
+        <Link href={enlaceRuta} className={styles['enlace-ver-todo']}>
           Ver todos
         </Link>
       </div>
@@ -134,11 +158,21 @@ function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Coleccio
               }`}
           >
             {productos.map((prod) => (
-              <Link
-                to={enlaceRuta}
+              // Al hacer clic se abre directamente el detalle del producto
+              <div
                 key={prod.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Ver ${prod.nombre}`}
                 draggable={false}
                 className={styles['tarjeta-coleccion']}
+                onClick={() => onSeleccionarProducto(prod)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSeleccionarProducto(prod);
+                  }
+                }}
               >
                 <div className={styles['contenedor-imagen-coleccion']}>
                   {prod.imagen && prod.imagen !== 'en proceso' ? (
@@ -154,10 +188,10 @@ function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Coleccio
                 </div>
 
                 <div className={styles['info-coleccion']}>
-                  <h4>{prod.nombre}</h4>
+                  <h3>{prod.nombre}</h3>
                   <span>S/ {Number(prod.precio).toLocaleString('es-PE')}</span>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}
@@ -166,14 +200,37 @@ function CarruselProductos({ titulo, productos, loading, enlaceRuta = '/Coleccio
   );
 }
 
-function Inicio() {
-  const [productosDestacados, setProductosDestacados] = useState([]);
-  const [todosLosProductos, setTodosLosProductos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [productosColeccion, setProductosColeccion] = useState([]);
-  const [productosSale, setProductosSale] = useState([]);
+// datosIniciales: listas precargadas en el servidor (SSR). Si faltan, se piden en el cliente.
+function Inicio({ datosIniciales = null }) {
+  const [todosLosProductos, setTodosLosProductos] = useState(datosIniciales?.general ?? []);
+  // 12 productos para que el carrusel de Nuevos Ingresos tenga recorrido horizontal
+  const [productosDestacados, setProductosDestacados] = useState((datosIniciales?.general ?? []).slice(0, 12));
+  const [loading, setLoading] = useState(!datosIniciales);
+  const [productosColeccion, setProductosColeccion] = useState(datosIniciales?.coleccion ?? []);
+  const [productosSale, setProductosSale] = useState(datosIniciales?.sale ?? []);
+  // Producto abierto en el detalle (null = cerrado)
+  const [productoSeleccionado, setProductoSeleccionado] = useState(null);
+  const abrirDetalle = (prod) => setProductoSeleccionado(mapearProducto(prod));
+  // La pestaña Colección ya no existe: sus productos llevan al catálogo completo
+  const router = useRouter();
+  const irALentes = () => router.push('/Lentes');
+
+  // Campaña vigente (ej. Colección de Verano): se destaca con su propio carrusel
+  const { data: campanasActivas = [] } = useQuery({
+    queryKey: CLAVE_CAMPANAS_ACTIVAS,
+    queryFn: () => obtenerCampanasActivas(),
+    staleTime: 5 * 60 * 1000
+  });
+  const campanaDestacada = campanasActivas[0];
+  const { data: productosCampana = [], isPending: cargandoCampana } = useQuery({
+    queryKey: ['productos', 'campana-inicio', campanaDestacada?.slug],
+    queryFn: () => obtenerProductosDeCampana(campanaDestacada.slug),
+    enabled: Boolean(campanaDestacada),
+    staleTime: 60 * 1000
+  });
 
   useEffect(() => {
+    if (datosIniciales) return; // ya vienen renderizados desde el servidor
     const fetchProductos = async () => {
       try {
         const [resGeneral, resColeccion, resSale] = await Promise.all([
@@ -201,12 +258,15 @@ function Inicio() {
       }
     };
     fetchProductos();
-  }, []);
+  }, [datosIniciales]);
 
 
   return (
     <div className={`${styles['inicio-pagina'] || 'inicio-pagina'}`}>
       <Cabecera />
+      <Suspense fallback={null}>
+        <AvisoSuscripcion />
+      </Suspense>
 
       {/* HERO SECTION */}
       <section className={`${styles['hero-section'] || 'hero-section'}`}>
@@ -215,7 +275,7 @@ function Inicio() {
         <div className={`${styles['hero-content'] || 'hero-content'}`}>
           <h1 className={`${styles['hero-title'] || 'hero-title'}`}>Lecco</h1>
           <p className={`${styles['hero-subtitle'] || 'hero-subtitle'}`}>El estilo perfecto empieza por tu mirada</p>
-          <Link to="/Coleccion" className={`${styles['hero-btn'] || 'hero-btn'}`}>Ver Colección</Link>
+          <Link href="/Lentes" className={`${styles['hero-btn'] || 'hero-btn'}`}>Ver Colección</Link>
         </div>
       </section>
 
@@ -226,7 +286,7 @@ function Inicio() {
         <h2 className={styles?.['section-title'] || 'section-title'}>Encuentra tu estilo</h2>
         <div className={styles?.['categorias-grid'] || 'categorias-grid'}>
           <Link
-            to="/Coleccion"
+            href="/Lentes"
             className={styles?.['categoria-card'] || 'categoria-card'}
           >
             <CategoriaCarrusel
@@ -239,7 +299,7 @@ function Inicio() {
           </Link>
 
           <Link
-            to="/Coleccion"
+            href="/Lentes"
             className={styles?.['categoria-card'] || 'categoria-card'}
           >
             <CategoriaCarrusel
@@ -252,7 +312,7 @@ function Inicio() {
           </Link>
 
           <Link
-            to="/Coleccion"
+            href="/Lentes"
             className={styles?.['categoria-card'] || 'categoria-card'}
           >
             <CategoriaCarrusel
@@ -267,28 +327,52 @@ function Inicio() {
       </section>
 
 
+      {/* CARRUSEL DE LA CAMPAÑA VIGENTE */}
+      {campanaDestacada && (
+        <CarruselProductos
+          titulo={campanaDestacada.titulo}
+          enlaceRuta={`/campanas/${campanaDestacada.slug}`}
+          productos={productosCampana}
+          loading={cargandoCampana}
+          onSeleccionarProducto={abrirDetalle}
+        />
+      )}
+
       {/* CARRUSEL NUEVOS INGRESOS */}
       <CarruselProductos
         titulo="Nuevos Ingresos"
+        enlaceRuta="/Lentes"
         productos={productosDestacados}
         loading={loading}
+        onSeleccionarProducto={abrirDetalle}
       />
 
       {/* CARRUSEL COLECCIÓN */}
       <CarruselProductos
         titulo="Colección"
+        enlaceRuta="/Lentes"
         productos={productosColeccion}
         loading={loading}
+        onSeleccionarProducto={irALentes}
       />
 
       {/* CARRUSEL SALE */}
       <CarruselProductos
         titulo="Sale"
+        enlaceRuta="/Sale"
         productos={productosSale}
         loading={loading}
+        onSeleccionarProducto={abrirDetalle}
       />
 
       <PiePagina />
+
+      {productoSeleccionado && (
+        <DetalleProducto
+          producto={productoSeleccionado}
+          onCerrar={() => setProductoSeleccionado(null)}
+        />
+      )}
     </div>
   );
 }

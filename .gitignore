@@ -13,6 +13,10 @@ node_modules
 # Build
 dist
 dist-ssr
+.next
+out
+next-env.d.ts
+*.tsbuildinfo
 
 # Archivos locales y de entorno
 *.local

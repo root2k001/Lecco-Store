@@ -1,9 +1,17 @@
 import { Router } from 'express';
+import pkg from '@prisma/client';
 import prisma from '../prisma.js';
 import { verifyToken, verifyAdmin, optionalToken } from '../middlewares/authMiddleware.js';
-import { Resend } from 'resend';
-import { crearPedidoSchema, actualizarEstadoPedidoSchema } from '../validators/pedidos.js';
+import { crearPedidoSchema, actualizarEstadoPedidoSchema, confirmarPagoSchema } from '../validators/pedidos.js';
+import { mercadoPagoHabilitado, crearPreferencia } from '../services/mercadoPagoService.js';
+import { sincronizarPagoMercadoPago } from '../services/pagosPedido.js';
+import { parseId } from '../validators/params.js';
+import { enviarEmail } from '../services/emailService.js';
+import { plantillaEstadoPedido } from '../services/emailTemplates.js';
 import rateLimit from 'express-rate-limit';
+import { notificarPedidoCreado, sincronizarCliente } from '../services/clientesMarketing.js';
+
+const { Prisma } = pkg;
 
 const router = Router();
 
@@ -14,19 +22,26 @@ const crearPedidoLimiter = rateLimit({
   message: { error: 'Demasiados pedidos en poco tiempo. Intenta de nuevo más tarde.' }
 });
 
-// Helper para escapar caracteres HTML especiales en emails
-const escapeHtml = (str) => String(str)
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
+// Consultas de estado al volver de Mercado Pago
+const confirmarPagoLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: 'Demasiadas consultas de pago. Intenta de nuevo más tarde.' }
+});
 
-// Helper Resend — usa API HTTP, no SMTP (funciona sin restricciones en Render)
-const crearResend = () => {
-  if (!process.env.RESEND_API_KEY) return null;
-  return new Resend(process.env.RESEND_API_KEY);
-};
+// Devuelve el pedido a su estado previo si no se pudo generar el pago (libera el stock)
+const anularPedidoSinPago = (pedido) => prisma.$transaction(async (tx) => {
+  for (const item of pedido.items) {
+    await tx.producto.update({
+      where: { id: item.productoId },
+      data: { stock: { increment: item.cantidad } }
+    });
+  }
+  await tx.pedido.update({
+    where: { id: pedido.id },
+    data: { estado: 'cancelado', estadoPago: 'rechazado' }
+  });
+});
 
 // Mapa de estados para el email
 const estadoLabels = {
@@ -44,7 +59,7 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
   if (!validacion.success) {
     return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de pedido inválidos' });
   }
-  const { items, direccion, ciudad, codigoPostal, telefono } = validacion.data;
+  const { items, direccion, ciudad, codigoPostal, telefono, origenCampana, metodoPago } = validacion.data;
   // 'items' debe ser un arreglo: [{ productoId: 1, cantidad: 2 }]
   // El precio y total se calculan desde la base de datos (NUNCA del frontend)
 
@@ -52,11 +67,20 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
     return res.status(400).json({ error: 'El pedido debe contener al menos un producto.' });
   }
 
+  if (metodoPago === 'mercadopago' && !mercadoPagoHabilitado()) {
+    return res.status(503).json({ error: 'El pago con Mercado Pago no está disponible en este momento. Puedes finalizar tu pedido por WhatsApp.' });
+  }
+
+  // Nombres y precios de BD para el detalle de la preferencia de Mercado Pago
+  let lineasPago = [];
+
   try {
     // Todo dentro de una transacción para evitar race conditions (TOCTOU)
-    const nuevoPedido = await prisma.$transaction(async (tx) => {
-      let totalCalculado = 0;
+    let nuevoPedido = await prisma.$transaction(async (tx) => {
+      // Decimal de Prisma: evita errores de coma flotante al sumar importes
+      let totalCalculado = new Prisma.Decimal(0);
       const itemsParaCrear = [];
+      lineasPago = [];
 
       for (const item of items) {
         // 1. Obtener el producto con su precio REAL desde la BD
@@ -77,10 +101,12 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
         itemsParaCrear.push({
           productoId: producto.id,
           cantidad: item.cantidad,
-          precioUnit: producto.precio
+          precioUnit: producto.precio,
+          color: producto.color // copia del color al momento de la compra
         });
+        lineasPago.push({ productoId: producto.id, nombre: producto.nombre, cantidad: item.cantidad, precioUnit: producto.precio });
 
-        totalCalculado += producto.precio * item.cantidad;
+        totalCalculado = totalCalculado.add(producto.precio.mul(item.cantidad));
 
         // 4. Decrementar stock de forma atómica: solo si sigue habiendo stock suficiente.
         //    Evita stock negativo cuando dos pedidos concurrentes pasan la verificación del paso 2.
@@ -100,8 +126,15 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
         ciudad,
         codigoPostal,
         telefono,
+        metodoPago,
         items: { create: itemsParaCrear }
       };
+
+      // Atribución: solo se guarda si la campaña existe (evita valores basura en las métricas)
+      if (origenCampana) {
+        const campana = await tx.campana.findUnique({ where: { slug: origenCampana }, select: { slug: true } });
+        if (campana) pedidoData.origenCampana = campana.slug;
+      }
 
       // Solo vincular usuario si está logueado (invitados no tienen usuarioId)
       if (usuarioId) {
@@ -116,7 +149,28 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
       return pedido;
     });
 
-    res.status(201).json({ message: 'Pedido procesado exitosamente', pedido: nuevoPedido });
+    // Mercado Pago: se genera el checkout con los precios de la BD
+    let initPoint;
+    if (metodoPago === 'mercadopago') {
+      try {
+        const preferencia = await crearPreferencia(nuevoPedido, lineasPago);
+        nuevoPedido = await prisma.pedido.update({
+          where: { id: nuevoPedido.id },
+          data: { mpPreferenciaId: preferencia.id },
+          include: { items: true }
+        });
+        initPoint = preferencia.initPoint;
+      } catch (error) {
+        console.error(`Error creando preferencia de Mercado Pago (pedido #${nuevoPedido.id}):`, error);
+        await anularPedidoSinPago(nuevoPedido).catch(e => console.error('Error anulando pedido sin pago:', e));
+        return res.status(502).json({ error: 'No se pudo iniciar el pago con Mercado Pago. Intenta de nuevo o finaliza tu pedido por WhatsApp.' });
+      }
+    }
+
+    res.status(201).json({ message: 'Pedido procesado exitosamente', pedido: nuevoPedido, ...(initPoint ? { initPoint } : {}) });
+
+    // Brevo (fire-and-forget, después de responder): estadísticas del cliente y evento post-compra
+    notificarPedidoCreado(nuevoPedido);
   } catch (error) {
     console.error('Error creando pedido:', error);
 
@@ -126,6 +180,33 @@ router.post('/', crearPedidoLimiter, optionalToken, async (req, res) => {
     }
 
     res.status(500).json({ error: 'Hubo un error al procesar el pedido' });
+  }
+});
+
+// Métodos de pago disponibles (el frontend oculta Mercado Pago si no está configurado)
+router.get('/metodos-pago', (req, res) => {
+  res.json({ whatsapp: true, mercadopago: mercadoPagoHabilitado() });
+});
+
+// Retorno desde Mercado Pago: consulta el pago en MP y actualiza el pedido (respaldo del webhook)
+router.post('/pago/confirmar', confirmarPagoLimiter, async (req, res) => {
+  if (!mercadoPagoHabilitado()) {
+    return res.status(503).json({ error: 'Mercado Pago no está configurado.' });
+  }
+  const validacion = confirmarPagoSchema.safeParse(req.body);
+  if (!validacion.success) {
+    return res.status(400).json({ error: validacion.error.issues[0]?.message || 'ID de pago inválido.' });
+  }
+
+  try {
+    const resultado = await sincronizarPagoMercadoPago(validacion.data.pagoId);
+    if (!resultado) {
+      return res.status(404).json({ error: 'No se encontró un pedido asociado a este pago.' });
+    }
+    res.json(resultado);
+  } catch (error) {
+    console.error('Error confirmando pago de Mercado Pago:', error);
+    res.status(502).json({ error: 'No se pudo verificar el pago con Mercado Pago.' });
   }
 });
 
@@ -176,7 +257,10 @@ router.get('/admin/todos', verifyToken, verifyAdmin, async (req, res) => {
 
 // Actualizar el estado de un pedido (ej. pendiente -> enviado)
 router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
-  const { id } = req.params;
+  const id = parseId(req.params.id);
+  if (!id) {
+    return res.status(400).json({ error: 'ID de pedido inválido' });
+  }
   const validacion = actualizarEstadoPedidoSchema.safeParse(req.body);
   if (!validacion.success) {
     return res.status(400).json({ error: validacion.error.issues[0]?.message || 'Datos de estado no válidos' });
@@ -185,7 +269,7 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
 
   try {
     const pedidoPrevio = await prisma.pedido.findUnique({
-      where: { id: parseInt(id) },
+      where: { id },
       include: {
         usuario: { select: { nombre: true, email: true } },
         items: { include: { producto: { select: { nombre: true, precio: true } } } }
@@ -222,13 +306,18 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
 
       // Actualizar el pedido
       await tx.pedido.update({
-        where: { id: parseInt(id) },
+        where: { id },
         data: { estado }
       });
     });
 
     // Obtenemos el pedido actualizado de la bd o asumimos sus valores previos para continuar
     const pedidoActualizado = { ...pedidoPrevio, estado };
+
+    // Cancelar o reactivar cambia el gasto del cliente: se actualiza en Brevo
+    if ((pedidoPrevio.estado === 'cancelado') !== (estado === 'cancelado')) {
+      sincronizarCliente(pedidoPrevio.usuarioId);
+    }
     // Preparar el detalle del historial
     let detalleHistorial = `Pedido #${id} del cliente "${pedidoPrevio.usuario?.nombre || 'Invitado'}": estado modificado de "${pedidoPrevio.estado}" a "${estado}".`;
     if (estado === 'cancelado' && motivo) {
@@ -245,65 +334,22 @@ router.put('/admin/estado/:id', verifyToken, verifyAdmin, async (req, res) => {
     });
 
     // ─── Enviar email de notificación al cliente con Resend ───────────────────
-    const resend = crearResend();
-    if (resend && pedidoPrevio.usuario?.email) {
+    if (pedidoPrevio.usuario?.email) {
       const estadoInfo = estadoLabels[estado] || { label: estado, color: '#475569', bg: '#f1f5f9' };
-      const clienteEmail = pedidoPrevio.usuario.email;
-      const clienteNombre = pedidoPrevio.usuario.nombre || 'Cliente';
-      const fromEmail = process.env.RESEND_FROM_EMAIL || 'Lecco Store <onboarding@resend.dev>';
-      const itemsHtml = pedidoPrevio.items.map(item => `
-        <tr>
-          <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; color: #334155;">${item.producto?.nombre || 'Producto'}</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; color: #64748b; text-align: center;">${item.cantidad}</td>
-          <td style="padding: 8px 0; border-bottom: 1px solid #f1f5f9; color: #334155; text-align: right;">S/ ${Number(item.precioUnit).toFixed(2)}</td>
-        </tr>
-      `).join('');
-
-      resend.emails.send({
-        from: fromEmail,
-        to: clienteEmail,
+      // Fire-and-forget: enviarEmail no lanza errores (si no hay RESEND_API_KEY, solo avisa)
+      enviarEmail({
+        to: pedidoPrevio.usuario.email,
         subject: `📦 Actualización de tu pedido #${id} — ${estadoInfo.label}`,
-        html: `
-          <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
-            <div style="background: #111827; padding: 28px 32px;">
-              <h1 style="color: #fff; margin: 0; font-size: 22px; font-weight: 300; letter-spacing: 4px; text-transform: uppercase;">LECCO</h1>
-              <p style="color: #94a3b8; margin: 4px 0 0; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;">Store</p>
-            </div>
-            <div style="padding: 32px;">
-              <h2 style="color: #1e293b; margin: 0 0 8px; font-size: 20px; font-weight: 600;">Hola, ${escapeHtml(clienteNombre)} 👋</h2>
-              <p style="color: #475569; margin: 0 0 24px; font-size: 15px; line-height: 1.6;">
-                Te informamos que el estado de tu pedido <strong>#${id}</strong> ha sido actualizado.
-              </p>
-              <div style="background: ${estadoInfo.bg}; border-radius: 8px; padding: 16px 20px; margin-bottom: 28px;">
-                <p style="margin: 0; font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Estado actual</p>
-                <p style="margin: 0; font-size: 20px; font-weight: 700; color: ${estadoInfo.color};">${estadoInfo.label}</p>
-              </div>
-              <h3 style="color: #1e293b; font-size: 14px; font-weight: 600; letter-spacing: 0.5px; margin: 0 0 12px; text-transform: uppercase;">Productos de tu pedido</h3>
-              <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-                <thead>
-                  <tr>
-                    <th style="padding: 8px 0; text-align: left; font-size: 12px; color: #94a3b8; text-transform: uppercase; border-bottom: 2px solid #f1f5f9;">Producto</th>
-                    <th style="padding: 8px 0; text-align: center; font-size: 12px; color: #94a3b8; text-transform: uppercase; border-bottom: 2px solid #f1f5f9;">Cant.</th>
-                    <th style="padding: 8px 0; text-align: right; font-size: 12px; color: #94a3b8; text-transform: uppercase; border-bottom: 2px solid #f1f5f9;">Precio</th>
-                  </tr>
-                </thead>
-                <tbody>${itemsHtml}</tbody>
-              </table>
-              <div style="background: #f8fafc; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px;">
-                <p style="margin: 0 0 6px; font-size: 13px; color: #64748b;">📍 <strong>Dirección de envío:</strong></p>
-                <p style="margin: 0; color: #334155; font-size: 14px;">${escapeHtml(pedidoPrevio.direccion || '')}, ${escapeHtml(pedidoPrevio.ciudad || '')}</p>
-              </div>
-              <div style="border-top: 2px solid #f1f5f9; padding-top: 16px;">
-                <span style="color: #64748b; font-size: 14px; font-weight: 600; text-transform: uppercase;">Total: </span>
-                <span style="color: #1e293b; font-size: 18px; font-weight: 700;">S/ ${Number(pedidoPrevio.total).toFixed(2)}</span>
-              </div>
-            </div>
-            <div style="background: #f8fafc; padding: 20px 32px; text-align: center;">
-              <p style="margin: 0; font-size: 11px; color: #cbd5e1;">© ${new Date().getFullYear()} Lecco Store. Todos los derechos reservados.</p>
-            </div>
-          </div>
-        `
-      }).catch(err => console.error('Error enviando email de estado al cliente con Resend:', err));
+        html: plantillaEstadoPedido({
+          pedidoId: id,
+          clienteNombre: pedidoPrevio.usuario.nombre || 'Cliente',
+          estadoInfo,
+          items: pedidoPrevio.items,
+          direccion: pedidoPrevio.direccion,
+          ciudad: pedidoPrevio.ciudad,
+          total: pedidoPrevio.total
+        })
+      });
     }
     // ─────────────────────────────────────────────────────────────────────────
 

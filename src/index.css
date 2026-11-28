@@ -51,3 +51,24 @@ h3 {
   letter-spacing: 2px;
   color: var(--color-primary);
 }
+/* Accesibilidad: usuarios con "reducir movimiento" activado en su sistema.
+   Se detienen los bucles decorativos y el desplazamiento suave; las entradas
+   breves (modales, toasts) se mantienen como respuesta visual. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
+  .scroll-indicador,
+  .skeleton-title,
+  .skeleton-subtitle,
+  .skeleton-pills,
+  .skeleton-filter-btn,
+  .skeleton-imagen,
+  .skeleton-divider,
+  .skeleton-texto {
+    animation: none;
+  }
+}

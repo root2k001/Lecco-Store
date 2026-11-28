@@ -1,16 +1,19 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import AdminMetricas from './AdminMetricas';
 import AdminPedidos from './AdminPedidos';
 import AdminProductos from './AdminProductos';
 import AdminMensajes from './AdminMensajes';
 import AdminHistorial from './AdminHistorial';
+import AdminCampanas from './AdminCampanas';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
   const { usuario, logout } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState('dashboard');
   const [pedidos, setPedidos] = useState([]);
@@ -33,7 +36,7 @@ function AdminDashboard() {
 
       if (resPedidos.status === 401 || resHistorial.status === 401) {
         logout();
-        navigate('/');
+        router.push('/');
         return;
       }
 
@@ -56,11 +59,13 @@ function AdminDashboard() {
 
   useEffect(() => {
     if (!usuario || usuario.rol !== 'admin') {
-      navigate('/');
+      router.push('/');
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- carga asíncrona al montar: el setState ocurre tras el fetch
       cargarDatos();
     }
-  }, [usuario, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- recargar solo cuando cambia el usuario (cargarDatos se recrea en cada render)
+  }, [usuario, router]);
 
 
 
@@ -102,6 +107,15 @@ function AdminDashboard() {
         <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
           <polyline points="22,6 12,13 2,6" />
+        </svg>
+      )
+    },
+    {
+      id: 'campanas',
+      label: 'Campañas',
+      icon: (
+        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 11l18-8v18L3 13z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" />
         </svg>
       )
     },
@@ -157,7 +171,7 @@ function AdminDashboard() {
               <span className="admin-user-role">Administrador</span>
             </div>
           </div>
-          <button className="btn-volver-tienda" onClick={() => navigate('/')}>
+          <button className="btn-volver-tienda" onClick={() => router.push('/')}>
             <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" strokeWidth="2" fill="none">
               <path d="M19 12H5" /><polyline points="12 19 5 12 12 5" />
             </svg>
@@ -190,6 +204,10 @@ function AdminDashboard() {
 
         {activeTab === 'mensajes' && (
           <AdminMensajes />
+        )}
+
+        {activeTab === 'campanas' && (
+          <AdminCampanas />
         )}
 
         {activeTab === 'historial' && (

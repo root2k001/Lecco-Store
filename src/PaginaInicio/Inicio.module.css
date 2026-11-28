@@ -64,7 +64,7 @@
 .hero-subtitle {
   font-size: 1.3rem;
   font-weight: 300;
-  letter-spacing: 2px;
+  letter-spacing: 0.04em;
   margin-bottom: 40px;
   opacity: 0.9;
 }
@@ -490,6 +490,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  cursor: pointer; /* antes lo daba el <Link>; ahora la tarjeta abre el detalle */
 }
 
 /* Centra las tarjetas cuando son pocas (1 a 4) y se desactiva solo al haber scroll */
@@ -544,7 +545,8 @@
   gap: 10px;
 }
 
-.info-coleccion h4 {
+.info-coleccion h3 {
+  font-family: inherit;
   font-size: 0.78rem;
   font-weight: 400;
   letter-spacing: 1.2px;
@@ -590,5 +592,13 @@
 
   .info-coleccion span {
     opacity: 1;
+  }
+}
+/* Accesibilidad: sin zoom continuo ni entradas animadas con "reducir movimiento" */
+@media (prefers-reduced-motion: reduce) {
+  .hero-background,
+  .hero-content,
+  .esqueleto-celda {
+    animation: none;
   }
 }

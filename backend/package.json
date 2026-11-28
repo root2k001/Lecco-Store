@@ -11,7 +11,9 @@
     "build": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "db:push": "prisma db push",
-    "db:seed": "node seedAdmin.js"
+    "db:seed": "node seedAdmin.js",
+    "test": "node --test --test-concurrency=1 test/flujo-negocio.test.js test/brevo.test.js test/campanas.test.js test/mercadopago.test.js",
+    "brevo:setup": "node scripts/brevo-setup.js"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",

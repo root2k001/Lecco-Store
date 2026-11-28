@@ -1,3 +1,5 @@
+'use client';
+
 import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 
 const AuthContext = createContext();
@@ -73,10 +75,10 @@ export const AuthProvider = ({ children }) => {
         return data;
     }, []);
 
-    const registro = useCallback(async (nombre, email, password) => {
+    const registro = useCallback(async (nombre, email, password, aceptaMarketing = false) => {
         const { data } = await fetchApi('/registro', {
             method: 'POST',
-            body: JSON.stringify({ nombre, email, password })
+            body: JSON.stringify({ nombre, email, password, aceptaMarketing })
         });
         return data;
     }, []);

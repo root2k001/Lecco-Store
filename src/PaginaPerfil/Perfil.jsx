@@ -1,6 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import Cabecera from '../Compartidos/cabecera/cabecera';
 import PiePagina from '../Compartidos/footer/Footer';
 import './Perfil.css';
@@ -77,17 +79,93 @@ function ModalDetallePedido({ pedido, onClose }) {
   );
 }
 
+// Formulario de datos personales. Se monta solo con el usuario ya cargado (key = id),
+// así sus campos (y la casilla de marketing) arrancan con los datos reales aunque
+// se recargue la página en /perfil. Antes salían vacíos y, al guardar, se podía
+// retirar el consentimiento sin querer.
+function FormularioDatosPersonales({ usuario, actualizarPerfil }) {
+  const [nombre, setNombre] = useState(usuario.nombre || '');
+  const [email, setEmail] = useState(usuario.email || '');
+  const [password, setPassword] = useState('');
+  const [aceptaMarketing, setAceptaMarketing] = useState(Boolean(usuario.aceptaMarketing));
+  const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
+
+  const handleActualizarDatos = async (e) => {
+    e.preventDefault();
+    setMensaje({ tipo: '', texto: '' });
+
+    try {
+      await actualizarPerfil({
+        nombre,
+        email,
+        password,
+        // Solo se envía si cambió (así no se reinicia la fecha del consentimiento)
+        ...(aceptaMarketing !== Boolean(usuario.aceptaMarketing) ? { aceptaMarketing } : {})
+      });
+      setMensaje({ tipo: 'exito', texto: '¡Tus datos se actualizaron correctamente!' });
+      setPassword('');
+    } catch (error) {
+      setMensaje({ tipo: 'error', texto: error.message });
+    }
+  };
+
+  return (
+    <div className="perfil-card">
+      <h2>Datos Personales</h2>
+      {mensaje.texto && (
+        <div className={`mensaje-alerta ${mensaje.tipo}`}>
+          {mensaje.texto}
+        </div>
+      )}
+      <form key={usuario?.id || 'perfil'} className="perfil-form" onSubmit={handleActualizarDatos}>
+        <div className="form-group">
+          <label>Nombre Completo</label>
+          <input 
+            type="text" 
+            value={nombre} 
+            onChange={(e) => setNombre(e.target.value)} 
+            required 
+          />
+        </div>
+        <div className="form-group">
+          <label>Correo Electrónico</label>
+          <input 
+            type="email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            required 
+          />
+        </div>
+        <div className="form-group">
+          <label>Nueva Contraseña (Opcional)</label>
+          <input 
+            type="password" 
+            placeholder="Déjalo en blanco si no deseas cambiarla"
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+          />
+        </div>
+        <label className="check-marketing">
+          <input
+            type="checkbox"
+            checked={aceptaMarketing}
+            onChange={(e) => setAceptaMarketing(e.target.checked)}
+          />
+          <span>Recibir ofertas y novedades de Lecco por correo</span>
+        </label>
+        <button type="submit" className="btn-guardar">Guardar Cambios</button>
+      </form>
+    </div>
+  );
+}
+
 function Perfil() {
   const { usuario, isLoading, actualizarPerfil } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
-  const [nombre, setNombre] = useState(usuario?.nombre || '');
-  const [email, setEmail] = useState(usuario?.email || '');
-  const [password, setPassword] = useState('');
   
   const [pedidos, setPedidos] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
   const [pedidoDetalle, setPedidoDetalle] = useState(null);
 
   async function cargarMisPedidos() {
@@ -108,26 +186,14 @@ function Perfil() {
 
   useEffect(() => {
     if (!isLoading && !usuario) {
-      navigate('/');
+      router.push('/');
     } else if (!isLoading && usuario) {
 
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- carga asíncrona al montar: el setState ocurre tras el fetch
       cargarMisPedidos();
     }
-  }, [usuario, isLoading, navigate]);
-
-  const handleActualizarDatos = async (e) => {
-    e.preventDefault();
-    setMensaje({ tipo: '', texto: '' });
-
-    try {
-      await actualizarPerfil({ nombre, email, password });
-      setMensaje({ tipo: 'exito', texto: '¡Tus datos se actualizaron correctamente!' });
-      setPassword('');
-    } catch (error) {
-      setMensaje({ tipo: 'error', texto: error.message });
-    }
-  };
+  }, [usuario, isLoading, router]);
 
   if (isLoading) {
     return (
@@ -153,44 +219,7 @@ function Perfil() {
         </div>
 
         <div className="perfil-grid">
-          <div className="perfil-card">
-            <h2>Datos Personales</h2>
-            {mensaje.texto && (
-              <div className={`mensaje-alerta ${mensaje.tipo}`}>
-                {mensaje.texto}
-              </div>
-            )}
-            <form key={usuario?.id || 'perfil'} className="perfil-form" onSubmit={handleActualizarDatos}>
-              <div className="form-group">
-                <label>Nombre Completo</label>
-                <input 
-                  type="text" 
-                  value={nombre} 
-                  onChange={(e) => setNombre(e.target.value)} 
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label>Correo Electrónico</label>
-                <input 
-                  type="email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  required 
-                />
-              </div>
-              <div className="form-group">
-                <label>Nueva Contraseña (Opcional)</label>
-                <input 
-                  type="password" 
-                  placeholder="Déjalo en blanco si no deseas cambiarla"
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                />
-              </div>
-              <button type="submit" className="btn-guardar">Guardar Cambios</button>
-            </form>
-          </div>
+          <FormularioDatosPersonales key={usuario.id} usuario={usuario} actualizarPerfil={actualizarPerfil} />
 
           <div className="perfil-card">
             <h2>Historial de Pedidos</h2>

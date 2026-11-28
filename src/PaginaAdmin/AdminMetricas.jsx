@@ -25,6 +25,7 @@ function AdminMetricas() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- carga asíncrona al montar: el setState ocurre tras el fetch
     fetchStats();
   }, []);
 
@@ -124,7 +125,8 @@ function AdminMetricas() {
                 pendiente: '#f59e0b',
                 procesando: '#3b82f6',
                 enviado: '#ec4899',
-                entregado: '#10b981'
+                entregado: '#10b981',
+                cancelado: '#ef4444'
               };
               return (
                 <div key={estado} className="estado-bar-row">
@@ -164,6 +166,29 @@ function AdminMetricas() {
           )}
         </div>
       </div>
+
+      {/* Ventas atribuidas a campañas (enlaces con utm_campaign, ej. correos de Brevo) */}
+      {stats.ventasPorCampana?.length > 0 && (
+        <div className="metricas-row">
+          <div className="metricas-card">
+            <h4>Ventas por Campaña</h4>
+            <table className="ventas-campana-tabla">
+              <thead>
+                <tr><th>Campaña</th><th>Pedidos</th><th>Ingresos</th></tr>
+              </thead>
+              <tbody>
+                {stats.ventasPorCampana.map(v => (
+                  <tr key={v.campana}>
+                    <td>{v.campana}</td>
+                    <td>{v.pedidos}</td>
+                    <td>S/ {Number(v.ingresos).toLocaleString('es-PE')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

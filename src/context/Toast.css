@@ -22,7 +22,7 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   pointer-events: auto;
   animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  border-left: 4px solid #333;
+  border: 1px solid #333;
 }
 
 @keyframes slideInRight {
@@ -31,15 +31,15 @@
 }
 
 .toast-success {
-  border-left-color: #10b981;
+  border-color: #10b981;
 }
 
 .toast-error {
-  border-left-color: #ef4444;
+  border-color: #ef4444;
 }
 
 .toast-info {
-  border-left-color: #3b82f6;
+  border-color: #3b82f6;
 }
 
 .toast-icon {

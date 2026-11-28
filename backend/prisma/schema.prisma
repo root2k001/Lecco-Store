@@ -14,6 +14,9 @@ model Usuario {
   password      String    
   rol           String             @default("cliente")
   creadoEn      DateTime           @default(now())
+  // Consentimiento expreso para recibir marketing (Ley 29733). Se sincroniza con Brevo.
+  aceptaMarketing  Boolean   @default(false)
+  consentimientoEn DateTime?
   pedidos       Pedido[]
   historial     HistorialCambios[]
   refreshTokens RefreshToken[]
@@ -27,6 +30,8 @@ model RefreshToken {
   usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   expiraEn  DateTime
   creadoEn  DateTime @default(now())
+
+  @@index([usuarioId])
 }
 
 model Producto {
@@ -46,7 +51,13 @@ model Producto {
   nuevosingresos      Boolean  @default(false)
   creadoEn            DateTime     @default(now())
   items               ItemPedido[]
- 
+  campanas            Campana[]
+
+  // Filtros del catálogo (/Sale, /Coleccion, nuevos ingresos) ordenados por fecha
+  @@index([sale, creadoEn])
+  @@index([coleccion, creadoEn])
+  @@index([nuevosingresos, creadoEn])
+  @@index([creadoEn])
 }
 
 model Pedido {
@@ -61,6 +72,14 @@ model Pedido {
   telefono     String?
   creadoEn     DateTime     @default(now())
   items        ItemPedido[]
+  origenCampana String? // slug de la campaña (UTM) que originó la venta
+  metodoPago      String  @default("whatsapp")  // whatsapp | mercadopago
+  estadoPago      String  @default("pendiente") // pendiente | aprobado | rechazado | reembolsado | revision
+  mpPreferenciaId String? // preferencia de Checkout Pro de Mercado Pago
+  mpPagoId        String? // último pago de Mercado Pago asociado
+
+  @@index([usuarioId, creadoEn]) // /mis-pedidos
+  @@index([creadoEn])            // listado admin y pedidos de hoy
 }
 
 model ItemPedido {
@@ -73,7 +92,8 @@ model ItemPedido {
   precioUnit Decimal  @db.Decimal(10, 2)
   color      String?
 
-
+  @@index([pedidoId])
+  @@index([productoId])
 }
 
 model HistorialCambios {
@@ -83,6 +103,8 @@ model HistorialCambios {
   accion   String
   detalle  String
   creadoEn DateTime @default(now())
+
+  @@index([creadoEn])
 }
 
 model PasswordResetToken {
@@ -101,4 +123,21 @@ model MensajeContacto {
   telefono String?
   mensaje  String
   creadoEn DateTime @default(now())
+}
+
+// Campañas temporales de la tienda (ej. "Colección de Verano"): agrupan productos,
+// tienen fechas de vigencia y su propia página /campanas/:slug.
+model Campana {
+  id          Int        @id @default(autoincrement())
+  slug        String     @unique // "verano-2027": URL y utm_campaign de Brevo
+  titulo      String
+  descripcion String?
+  banner      String?
+  inicio      DateTime
+  fin         DateTime
+  activa      Boolean    @default(true)
+  creadoEn    DateTime   @default(now())
+  productos   Producto[]
+
+  @@index([activa, inicio, fin])
 }
